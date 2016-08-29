@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.janelia.stitching.Boundaries;
 import org.janelia.stitching.TileInfo;
@@ -31,6 +32,20 @@ import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.NumericType;
+
+/**
+ * {@link BigDataViewer}-based application for exploring large datasets that are cut into tiles.
+ * Takes a path to a tile configuration file as a command line argument
+ * and displays it performing on-the-fly fusion (simple copying).
+ * It should be formatted as JSON array of {@link TileInfo} objects.
+ *
+ * For best performance, input tiles should have a size of 64x64x64 pixels and not overlap.
+ *
+ * You can pass an arbitrary number of input tile configurations and the images will be blended.
+ * It has predefined colors for the first three images, and random colors will be generated for the rest in case you pass more.
+ *
+ * @author Igor Pisarev
+ */
 
 public class BDVFusion
 {
@@ -106,13 +121,24 @@ public class BDVFusion
 
 		BigDataViewer.initSetups( spimData, converterSetups, sources );
 
+		final int[] predefinedColors = new int[] {
+				ARGBType.rgba( 1 << 7, 0, 0, 1 << 6 ),
+				ARGBType.rgba( 0, 1 << 7, 0, 1 << 6 ),
+				ARGBType.rgba( 0, 0, 1 << 7, 1 << 6 )
+		};
+		final Random rnd = new Random();
 		for ( final ConverterSetup converterSetup : converterSetups )
 		{
 			final int i = converterSetup.getSetupId();
 			converterSetup.setDisplayRange( 0, 1 << 8 );
 
 			if ( converterSetups.size() > 1 )
-				converterSetup.setColor( new ARGBType( ARGBType.rgba( i << 7, ( ( i + 1 ) % 2 ) << 7, 0, 1 << 6 ) ) );
+			{
+				if ( i < predefinedColors.length )
+					converterSetup.setColor( new ARGBType( predefinedColors[ i ] ) );
+				else
+					converterSetup.setColor( new ARGBType( ARGBType.rgba( rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, 1 << 6 ) ) );
+			}
 		}
 
 		/* composites */

@@ -3,8 +3,8 @@ package org.janelia.bdv.fusion;
 import java.util.Arrays;
 
 import org.janelia.stitching.Boundaries;
-import org.janelia.stitching.TileOperations;
 import org.janelia.stitching.TileInfo;
+import org.janelia.stitching.TileOperations;
 
 import bdv.AbstractViewerSetupImgLoader;
 import bdv.ViewerImgLoader;
@@ -17,9 +17,7 @@ import bdv.img.cache.VolatileImgCells;
 import bdv.img.cache.VolatileImgCells.CellCache;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.NativeImg;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
-import net.imglib2.img.cell.CellImg;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
@@ -65,7 +63,7 @@ public class StitchingUnsignedShortLoader extends AbstractViewerSetupImgLoader< 
 
 		cache = new VolatileGlobalCellCache( 1, 1, 1, 10 );
 
-		arrayLoader = new StitchingVolatileShortArrayLoader( tiles, boundaries.getMin() );
+		arrayLoader = new StitchingVolatileShortArrayLoader( tiles );
 	}
 
 	@Override
@@ -104,11 +102,6 @@ public class StitchingUnsignedShortLoader extends AbstractViewerSetupImgLoader< 
 		return 1;
 	}
 
-	/**
-	 * (Almost) create a {@link CellImg} backed by the cache.
-	 * The created image needs a {@link NativeImg#setLinkedType(net.imglib2.type.Type) linked type} before it can be used.
-	 * The type should be either {@link UnsignedShortType} and {@link VolatileUnsignedShortType}.
-	 */
 	protected < T extends NativeType< T > > CachedCellImg< T, VolatileShortArray > prepareCachedImage(
 			final int timepointId,
 			final int level,

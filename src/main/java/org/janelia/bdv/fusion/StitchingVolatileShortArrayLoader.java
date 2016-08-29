@@ -32,14 +32,10 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 
 	final private TileInfo[] tiles;
 
-	final private long[] offset;
-
-	public StitchingVolatileShortArrayLoader( final TileInfo[] tiles, final long[] offset )
+	public StitchingVolatileShortArrayLoader( final TileInfo[] tiles )
 	{
 		theEmptyArray = new VolatileShortArray( 1, false );
 		this.tiles = tiles;
-		this.offset = offset;
-		System.out.println( "Creating loader, offset="+Arrays.toString( offset ) );
 	}
 
 	@Override
@@ -53,12 +49,7 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 	{
 		System.out.println( "Generating " + Arrays.toString( min ) );
 
-		final long[] minOffset = new long[]{
-				min[ 0 ],// + offset[ 0 ],
-				min[ 1 ],// + offset[ 1 ],
-				min[ 2 ] };// + offset[ 2 ] };
-
-		final ArrayList< TileInfo > boxTiles = TileOperations.findTilesWithinSubregion( tiles, minOffset, dimensions );
+		final ArrayList< TileInfo > boxTiles = TileOperations.findTilesWithinSubregion( tiles, min, dimensions );
 
 		final short[] data = new short[ dimensions[ 0 ] * dimensions[ 1 ] * dimensions[ 2 ] ];
 
@@ -67,7 +58,7 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 						ArrayImgs.unsignedShorts(
 								data,
 								new long[] { dimensions[ 0 ], dimensions[ 1 ], dimensions[ 2 ] } ),
-						minOffset );
+						min );
 
 		for ( final TileInfo tile : boxTiles )
 		{
@@ -80,7 +71,6 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 
 				@SuppressWarnings( "unchecked" )
 				final RealRandomAccessible< UnsignedShortType > interpolatedTile = Views.interpolate( Views.extendBorder( ( RandomAccessibleInterval< UnsignedShortType > ) ImagePlusImgs.from( imp ) ), new NLinearInterpolatorFactory<>() );
-
 
 				final Translation3D t = new Translation3D( tile.getPosition() );
 				final RandomAccessible< UnsignedShortType > translatedInterpolatedTile = RealViews.affine( interpolatedTile, t );
