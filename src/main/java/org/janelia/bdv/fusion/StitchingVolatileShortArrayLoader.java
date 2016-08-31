@@ -62,8 +62,8 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 
 		for ( final TileInfo tile : boxTiles )
 		{
-			System.out.println( "Opening " + tile.getFile() );
-			final ImagePlus imp = IJ.openImage( tile.getFile() );
+			System.out.println( "Opening " + tile.getFilePath() );
+			final ImagePlus imp = IJ.openImage( tile.getFilePath() );
 			if ( imp != null )
 			{
 				final Boundaries tileBoundaries = tile.getBoundaries();
