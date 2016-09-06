@@ -19,12 +19,18 @@ import org.janelia.stitching.TileOperations;
 import bdv.BigDataViewer;
 import bdv.ViewerSetupImgLoader;
 import bdv.bigcat.CombinedImgLoader;
+import bdv.bigcat.composite.ARGBCompositeAlphaAdd;
+import bdv.bigcat.composite.Composite;
+import bdv.bigcat.composite.CompositeCopy;
+import bdv.bigcat.composite.CompositeProjector;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.viewer.DisplayMode;
+import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
+import bdv.viewer.render.AccumulateProjectorFactory;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
@@ -51,14 +57,11 @@ public class BDVFusion
 {
 	public static void main( final String... args ) throws FileNotFoundException, IOException
 	{
-		final double[] alignment = new double[] { -6, 1.5, -2 };
-
 		final ArrayList< StitchingUnsignedShortLoader > loaders = new ArrayList<>();
 		double[] offset = null;
 		for ( final String arg : args )
 		{
 			final TileInfo[] tileInfos = TileInfoJSONProvider.loadTilesConfiguration( arg );
-			double[] currOffset = null;
 
 			if ( offset == null )
 			{
@@ -67,18 +70,11 @@ public class BDVFusion
 				offset = new double[ space.numDimensions() ];
 				for ( int d = 0; d < offset.length; d++ )
 					offset[ d ] = -space.min( d );
-				currOffset = offset;
-			}
-			else
-			{
-				currOffset = offset.clone();
-				for ( int d = 0; d < offset.length; d++ )
-					currOffset[ d ] += alignment[ d ];
 			}
 
-			TileOperations.translateTiles( tileInfos, currOffset );
+			TileOperations.translateTiles( tileInfos, offset );
 
-			final StitchingUnsignedShortLoader loader = new StitchingUnsignedShortLoader( tileInfos, 0, new int[] { 64, 64, 64 } );
+			final StitchingUnsignedShortLoader loader = new StitchingUnsignedShortLoader( tileInfos, loaders.size(), new int[] { 128, 128, 128 } );
 			loaders.add( loader );
 		}
 
@@ -121,35 +117,48 @@ public class BDVFusion
 
 		BigDataViewer.initSetups( spimData, converterSetups, sources );
 
-		final int[] predefinedColors = new int[] {
-				ARGBType.rgba( 1 << 7, 0, 0, 1 << 6 ),
-				ARGBType.rgba( 0, 1 << 7, 0, 1 << 6 ),
-				ARGBType.rgba( 0, 0, 1 << 7, 1 << 6 )
-		};
+		int[] predefinedColors = null;
+		if ( imgLoaders.size() == 2 )
+		{
+			predefinedColors = new int[] {
+					ARGBType.rgba( 0xff, 0, 0xff, 0xff ),
+					ARGBType.rgba( 0, 0xff, 0, 0xff ),
+			};
+		}
+		else if ( imgLoaders.size() == 3 )
+		{
+			predefinedColors = new int[] {
+					ARGBType.rgba( 0xff, 0, 0, 0xff ),
+					ARGBType.rgba( 0, 0xff, 0, 0xff ),
+					ARGBType.rgba( 0, 0, 0xff, 0xff )
+			};
+		}
+
 		final Random rnd = new Random();
 		for ( final ConverterSetup converterSetup : converterSetups )
 		{
 			final int i = converterSetup.getSetupId();
-			converterSetup.setDisplayRange( 0, 1 << 8 );
+			converterSetup.setDisplayRange( 0, 0xff );
 
-			if ( converterSetups.size() > 1 )
+			if ( predefinedColors != null )
 			{
 				if ( i < predefinedColors.length )
 					converterSetup.setColor( new ARGBType( predefinedColors[ i ] ) );
 				else
-					converterSetup.setColor( new ARGBType( ARGBType.rgba( rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, 1 << 6 ) ) );
+					converterSetup.setColor( new ARGBType( ARGBType.rgba( rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, 0xff ) ) );
 			}
 		}
 
 		/* composites */
-		/*final HashMap< Source< ? >, Composite< ARGBType, ARGBType > > sourceCompositesMap = new HashMap< >();
-		for ( final SourceAndConverter< ? > source : sources )
-			sourceCompositesMap.put( source.getSpimSource(), new CompositeCopy<>() );
+		final HashMap< Source< ? >, Composite< ARGBType, ARGBType > > sourceCompositesMap = new HashMap< >();
+		sourceCompositesMap.put( sources.get( 0 ).getSpimSource(), new CompositeCopy<>() );
+		for ( int i = 1; i < sources.size(); ++i )
+			sourceCompositesMap.put( sources.get( i ).getSpimSource(), new ARGBCompositeAlphaAdd() );
 
-		final AccumulateProjectorFactory< ARGBType > projectorFactory = new CompositeProjector.CompositeProjectorFactory< >( sourceCompositesMap );*/
+		final AccumulateProjectorFactory< ARGBType > projectorFactory = new CompositeProjector.CompositeProjectorFactory< >( sourceCompositesMap );
 
 		final ViewerOptions options = ViewerOptions.options()
-				//.accumulateProjectorFactory( projectorFactory )
+				.accumulateProjectorFactory( projectorFactory )
 				.numRenderingThreads( 16 )
 				.targetRenderNanos( 10000000 );
 

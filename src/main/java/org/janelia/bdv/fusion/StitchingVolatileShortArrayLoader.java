@@ -1,11 +1,11 @@
 package org.janelia.bdv.fusion;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.janelia.stitching.Boundaries;
 import org.janelia.stitching.TileInfo;
 import org.janelia.stitching.TileOperations;
+import org.janelia.stitching.Utils;
 
 import bdv.img.cache.CacheArrayLoader;
 import ij.IJ;
@@ -47,8 +47,6 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 	@Override
 	public VolatileShortArray loadArray( final int timepoint, final int setup, final int level, final int[] dimensions, final long[] min ) throws InterruptedException
 	{
-		System.out.println( "Generating " + Arrays.toString( min ) );
-
 		final ArrayList< TileInfo > boxTiles = TileOperations.findTilesWithinSubregion( tiles, min, dimensions );
 
 		final short[] data = new short[ dimensions[ 0 ] * dimensions[ 1 ] * dimensions[ 2 ] ];
@@ -62,8 +60,9 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 
 		for ( final TileInfo tile : boxTiles )
 		{
-			System.out.println( "Opening " + tile.getFilePath() );
 			final ImagePlus imp = IJ.openImage( tile.getFilePath() );
+			Utils.workaroundImagePlusNSlices( imp );
+
 			if ( imp != null )
 			{
 				final Boundaries tileBoundaries = tile.getBoundaries();
@@ -72,8 +71,8 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 				@SuppressWarnings( "unchecked" )
 				final RealRandomAccessible< UnsignedShortType > interpolatedTile = Views.interpolate( Views.extendBorder( ( RandomAccessibleInterval< UnsignedShortType > ) ImagePlusImgs.from( imp ) ), new NLinearInterpolatorFactory<>() );
 
-				final Translation3D t = new Translation3D( tile.getPosition() );
-				final RandomAccessible< UnsignedShortType > translatedInterpolatedTile = RealViews.affine( interpolatedTile, t );
+				final Translation3D translation = new Translation3D( tile.getPosition() );
+				final RandomAccessible< UnsignedShortType > translatedInterpolatedTile = RealViews.affine( interpolatedTile, translation );
 
 				final IterableInterval< UnsignedShortType > tileSource = Views.flatIterable( Views.interval( translatedInterpolatedTile, intersection ) );
 
