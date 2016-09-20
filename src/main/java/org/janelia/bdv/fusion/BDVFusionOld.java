@@ -64,9 +64,9 @@ import net.imglib2.util.ValuePair;
  * @author Igor Pisarev
  */
 
-public class BDVFusion
+public class BDVFusionOld
 {
-	public static void main1( final String... args ) throws FileNotFoundException, IOException
+	public static void main( final String... args ) throws FileNotFoundException, IOException
 	{
 		//final double[] alignment = new double[] { -6, 1.5, -2 };
 		final double[] alignment = new double[] { 0,0,0 };
@@ -108,32 +108,6 @@ public class BDVFusion
 
 		bdv.getViewerFrame().setVisible( true );
 	}
-	
-	public static void main( final String... args ) throws FileNotFoundException, IOException
-	{
-		final Gson gson = new Gson();
-		
-		final ArrayList< Pair< CellFileUnsignedShortImageLoader, VoxelDimensions > > loaders = new ArrayList<>();
-		for ( final String arg : args )
-		{
-			final CellFileImageMetaData metaData = gson.fromJson( new FileReader( arg ), CellFileImageMetaData.class );
-			final CellFileUnsignedShortImageLoader loader =
-					new CellFileUnsignedShortImageLoader(
-							metaData.baseFolder + "/%1$d/%4$d/%3$d/%2$d.tif",
-							metaData.getDimensions(),
-							metaData.getCellDimensions());
-			
-			loaders.add( new ValuePair< CellFileUnsignedShortImageLoader, VoxelDimensions >( loader, metaData.getVoxelDimensions() ) );
-		}
-
-		/* this is how to save the whole thing into HDF5 */
-		//			RandomAccessibleInterval< UnsignedShortType > img = loader.getImage( 0, ImgLoaderHints.LOAD_COMPLETELY );
-		//			H5Utils.saveUnsignedLong( img, file, "/volumes/raw", new long[]{64, 64, 64} );
-
-		final BigDataViewer bdv = createViewer( "StitchingViewer", loaders );
-
-		bdv.getViewerFrame().setVisible( true );
-	}
 
 	public static < A extends ViewerSetupImgLoader< ? extends NumericType< ? >, ? > > BigDataViewer createViewer(
 			final String windowTitle,
@@ -162,12 +136,9 @@ public class BDVFusion
 			final VoxelDimensions voxelDimensions = imgLoaders.get( i ).getB();
 			final AffineTransform3D calibrationTransform = new AffineTransform3D();
 			calibrationTransform.set(
-					1, -0.30, -0.25, 0,
-					0, 1.25 * voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
-					0, 0, 0.85 * voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
-//					1, 0, 0, 0,
-//					0, voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
-//					0, 0, voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
+					1, 0, 0, 0,
+					0, voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
+					0, 0, voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
 			final ViewRegistration viewRegistration = new ViewRegistration( 0, loader.setupId );
 			viewRegistration.preconcatenateTransform( new ViewTransformAffine( "calibration", calibrationTransform ));
 			viewRegistrationsList.add( viewRegistration );

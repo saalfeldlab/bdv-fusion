@@ -61,7 +61,7 @@ public class StitchingUnsignedShortLoader extends AbstractViewerSetupImgLoader< 
 
 		mipmapTransform = new AffineTransform3D();
 
-		cache = new VolatileGlobalCellCache( 1, 1, 1, 10 );
+		cache = new VolatileGlobalCellCache( 1, 1, 1, 16 );
 
 		arrayLoader = new StitchingVolatileShortArrayLoader( tiles );
 	}

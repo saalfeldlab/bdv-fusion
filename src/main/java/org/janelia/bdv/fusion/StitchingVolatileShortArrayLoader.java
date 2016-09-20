@@ -1,11 +1,13 @@
 package org.janelia.bdv.fusion;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.janelia.stitching.Boundaries;
 import org.janelia.stitching.TileInfo;
 import org.janelia.stitching.TileOperations;
+import org.janelia.stitching.Utils;
 
 import bdv.img.cache.CacheArrayLoader;
 import ij.IJ;
@@ -32,6 +34,8 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 
 	final private TileInfo[] tiles;
 
+	final Set< Long > threads = new HashSet<>();
+
 	public StitchingVolatileShortArrayLoader( final TileInfo[] tiles )
 	{
 		theEmptyArray = new VolatileShortArray( 1, false );
@@ -47,9 +51,17 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 	@Override
 	public VolatileShortArray loadArray( final int timepoint, final int setup, final int level, final int[] dimensions, final long[] min ) throws InterruptedException
 	{
-		System.out.println( "Generating " + Arrays.toString( min ) );
+		synchronized ( threads )
+		{
+			if ( threads.add( Thread.currentThread().getId() ) )
+				System.out.println( threads.size() + " active threads" );
+		}
 
+		//System.out.println( "Generating " + Arrays.toString( min ) );
+
+		final long q = System.nanoTime();
 		final ArrayList< TileInfo > boxTiles = TileOperations.findTilesWithinSubregion( tiles, min, dimensions );
+		//System.out.println( "Searching tiles: " + ( ( System.nanoTime() - q ) / Math.pow( 10, 9 ) ) + "s" );
 
 		final short[] data = new short[ dimensions[ 0 ] * dimensions[ 1 ] * dimensions[ 2 ] ];
 
@@ -62,8 +74,12 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 
 		for ( final TileInfo tile : boxTiles )
 		{
-			System.out.println( "Opening " + tile.getFilePath() );
+			//System.out.println( "Opening " + tile.getFilePath() );
+			//q = System.nanoTime();
 			final ImagePlus imp = IJ.openImage( tile.getFilePath() );
+			Utils.workaroundImagePlusNSlices( imp );
+			//System.out.println( "Loading tile: " + ( ( System.nanoTime() - q ) / Math.pow( 10, 9 ) ) + "s" );
+
 			if ( imp != null )
 			{
 				final Boundaries tileBoundaries = tile.getBoundaries();
@@ -72,8 +88,8 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 				@SuppressWarnings( "unchecked" )
 				final RealRandomAccessible< UnsignedShortType > interpolatedTile = Views.interpolate( Views.extendBorder( ( RandomAccessibleInterval< UnsignedShortType > ) ImagePlusImgs.from( imp ) ), new NLinearInterpolatorFactory<>() );
 
-				final Translation3D t = new Translation3D( tile.getPosition() );
-				final RandomAccessible< UnsignedShortType > translatedInterpolatedTile = RealViews.affine( interpolatedTile, t );
+				final Translation3D translation = new Translation3D( tile.getPosition() );
+				final RandomAccessible< UnsignedShortType > translatedInterpolatedTile = RealViews.affine( interpolatedTile, translation );
 
 				final IterableInterval< UnsignedShortType > tileSource = Views.flatIterable( Views.interval( translatedInterpolatedTile, intersection ) );
 
@@ -86,6 +102,8 @@ public class StitchingVolatileShortArrayLoader implements CacheArrayLoader< Vola
 					target.next().set( source.next() );
 			}
 		}
+
+		//System.out.println( "Loading region took " + ( ( System.nanoTime() - q ) / Math.pow( 10, 9 ) ) + "s" );
 
 		return new VolatileShortArray( data, true );
 	}
