@@ -32,38 +32,38 @@ import bdv.img.cache.CachedCellImg;
 import bdv.img.cache.LoadingStrategy;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
-import net.imglib2.type.volatiles.VolatileUnsignedShortType;
+import net.imglib2.img.basictypeaccess.volatiles.array.VolatileFloatArray;
+import net.imglib2.type.numeric.real.FloatType;
+import net.imglib2.type.volatiles.VolatileFloatType;
 
-public class CellFileUnsignedShortImageLoader extends AbstractCellFileImageLoader< UnsignedShortType, VolatileUnsignedShortType >
+public class CellFileFloatImageLoader extends AbstractCellFileImageLoader< FloatType, VolatileFloatType >
 {
-	final private CellFileUnsignedShortArrayLoader loader;
+	final private CellFileFloatArrayLoader loader;
 	
-	public CellFileUnsignedShortImageLoader(
+	public CellFileFloatImageLoader(
 			final String cellFormat,
 			final long[][] dimensions,
 			final int[][] cellDimensions)
 	{
-		super( cellFormat, dimensions, cellDimensions, new UnsignedShortType(), new VolatileUnsignedShortType() );
+		super( cellFormat, dimensions, cellDimensions, new FloatType(), new VolatileFloatType() );
 		
-		loader = new CellFileUnsignedShortArrayLoader( cellFormat, cellDimensions );
+		loader = new CellFileFloatArrayLoader( cellFormat, cellDimensions );
 	}
 
 	@Override
-	public RandomAccessibleInterval< UnsignedShortType > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
+	public RandomAccessibleInterval< FloatType > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 	{
-		final CachedCellImg< UnsignedShortType, VolatileShortArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.BLOCKING );
-		final UnsignedShortType linkedType = new UnsignedShortType( img );
+		final CachedCellImg< FloatType, VolatileFloatArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.BLOCKING );
+		final FloatType linkedType = new FloatType( img );
 		img.setLinkedType( linkedType );
 		return img;
 	}
 	
 	@Override
-	public RandomAccessibleInterval< VolatileUnsignedShortType > getVolatileImage( final int timepointId, final int level, final ImgLoaderHint... hints )
+	public RandomAccessibleInterval< VolatileFloatType > getVolatileImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 	{
-		final CachedCellImg< VolatileUnsignedShortType, VolatileShortArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.VOLATILE );
-		final VolatileUnsignedShortType linkedType = new VolatileUnsignedShortType( img );
+		final CachedCellImg< VolatileFloatType, VolatileFloatArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.VOLATILE );
+		final VolatileFloatType linkedType = new VolatileFloatType( img );
 		img.setLinkedType( linkedType );
 		return img;
 	}

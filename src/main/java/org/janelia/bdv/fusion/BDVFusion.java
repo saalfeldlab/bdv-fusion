@@ -113,17 +113,17 @@ public class BDVFusion
 	{
 		final Gson gson = new Gson();
 		
-		final ArrayList< Pair< CellFileUnsignedShortImageLoader, VoxelDimensions > > loaders = new ArrayList<>();
+		final ArrayList< Pair< CellFileFloatImageLoader, VoxelDimensions > > loaders = new ArrayList<>();
 		for ( final String arg : args )
 		{
 			final CellFileImageMetaData metaData = gson.fromJson( new FileReader( arg ), CellFileImageMetaData.class );
-			final CellFileUnsignedShortImageLoader loader =
-					new CellFileUnsignedShortImageLoader(
+			final CellFileFloatImageLoader loader =
+					new CellFileFloatImageLoader(
 							metaData.baseFolder + "/%1$d/%4$d/%3$d/%2$d.tif",
 							metaData.getDimensions(),
 							metaData.getCellDimensions());
 			
-			loaders.add( new ValuePair< CellFileUnsignedShortImageLoader, VoxelDimensions >( loader, metaData.getVoxelDimensions() ) );
+			loaders.add( new ValuePair< CellFileFloatImageLoader, VoxelDimensions >( loader, metaData.getVoxelDimensions() ) );
 		}
 
 		/* this is how to save the whole thing into HDF5 */

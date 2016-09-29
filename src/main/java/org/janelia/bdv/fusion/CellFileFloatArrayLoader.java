@@ -30,34 +30,26 @@ package org.janelia.bdv.fusion;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-
-import org.janelia.stitching.Utils;
 
 import bdv.img.cache.CacheArrayLoader;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ImageConverter;
-import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.array.ArrayCursor;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.ShortArray;
-import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
+import net.imglib2.img.basictypeaccess.array.FloatArray;
+import net.imglib2.img.basictypeaccess.volatiles.array.VolatileFloatArray;
 import net.imglib2.img.imageplus.ImagePlusImg;
 import net.imglib2.img.imageplus.ImagePlusImgs;
-import net.imglib2.meta.IntervalUtils;
-import net.imglib2.type.numeric.integer.UnsignedShortType;
 import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Intervals;
 import net.imglib2.util.Pair;
 import net.imglib2.view.Views;
 
-public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< VolatileShortArray >
+public class CellFileFloatArrayLoader implements CacheArrayLoader< VolatileFloatArray >
 {
-	private VolatileShortArray theEmptyArray;
+	private VolatileFloatArray theEmptyArray;
 
 	private final String cellFormat;
 	
@@ -82,9 +74,9 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 	 *
 	 * @param cellFormat
 	 */
-	public CellFileUnsignedShortArrayLoader( final String cellFormat, final int[][] cellSizes )
+	public CellFileFloatArrayLoader( final String cellFormat, final int[][] cellSizes )
 	{
-		theEmptyArray = new VolatileShortArray( 1, false );
+		theEmptyArray = new VolatileFloatArray( 1, false );
 		this.cellFormat = cellFormat;
 		this.cellSizes = cellSizes;
 	}
@@ -92,11 +84,11 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 	@Override
 	public int getBytesPerElement()
 	{
-		return 2;
+		return 4;
 	}
 
 	@Override
-	final public VolatileShortArray loadArray(
+	final public VolatileFloatArray loadArray(
 			final int timepoint,
 			final int setup,
 			final int level,
@@ -116,7 +108,7 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 		int numEntities = 1;
 		for ( int i = 0; i < dimensions.length; ++i )
 			numEntities *= dimensions[ i ];
-		final short[] data = new short[ numEntities ];
+		final float[] data = new float[ numEntities ];
 		
 		try
 		{
@@ -129,47 +121,47 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 			if ( imp == null )
 				throw new IOException( "imp == null" );
 			
-			if ( imp.getType() != ImagePlus.GRAY16 )
-				new ImageConverter( imp ).convertToGray16();
+			if ( imp.getType() != ImagePlus.GRAY32 )
+				new ImageConverter(imp).convertToGray32();
 			
 			final long[] longDimensions = new long[]{
 					dimensions[ 0 ],
 					dimensions[ 1 ],
 					dimensions[ 2 ] };
 			
-			final ArrayImg< UnsignedShortType, ShortArray > target =
-					ArrayImgs.unsignedShorts(
+			final ArrayImg< FloatType, FloatArray > target =
+					ArrayImgs.floats(
 							data,
 							longDimensions );
 			
 			@SuppressWarnings( "unchecked" )
-			final ImagePlusImg< UnsignedShortType, ShortArray > impSource =
-					( ImagePlusImg< UnsignedShortType, ShortArray > )ImagePlusImgs.from( imp );
+			final ImagePlusImg< FloatType, FloatArray > impSource =
+					( ImagePlusImg< FloatType, FloatArray > )ImagePlusImgs.from( imp );
 			
-			final RandomAccessibleInterval< UnsignedShortType > source =
+			final RandomAccessibleInterval< FloatType > source =
 					Views.interval(
 							Views.extendZero( impSource ),
 							new FinalInterval( longDimensions ) );
 			
-			for ( final Pair< UnsignedShortType, UnsignedShortType > pair : Views.interval( Views.pair( source, target ), target ) )
+			for ( final Pair< FloatType, FloatType > pair : Views.interval( Views.pair( source, target ), target ) )
 				pair.getB().set( pair.getA() );
 		}
 		catch ( final IOException e ) {
 //			System.out.println( "failed loading tile " + cellString );
 		}
 		
-		return new VolatileShortArray( data, true );
+		return new VolatileFloatArray( data, true );
 	}
 
 
 	@Override
-	public VolatileShortArray emptyArray( final int[] dimensions )
+	public VolatileFloatArray emptyArray( final int[] dimensions )
 	{
 		int numEntities = 1;
 		for ( int i = 0; i < dimensions.length; ++i )
 			numEntities *= dimensions[ i ];
 		if ( theEmptyArray.getCurrentStorageArray().length < numEntities )
-			theEmptyArray = new VolatileShortArray( numEntities, false );
+			theEmptyArray = new VolatileFloatArray( numEntities, false );
 		return theEmptyArray;
 	}
 }
