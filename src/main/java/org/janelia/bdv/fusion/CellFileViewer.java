@@ -4,7 +4,7 @@ import static bdv.bigcat.CombinedImgLoader.SetupIdAndLoader.setupIdAndLoader;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,7 +41,6 @@ import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
-import net.imglib2.type.numeric.NumericType;
 import net.imglib2.util.Pair;
 import net.imglib2.util.ValuePair;
 
@@ -81,7 +80,7 @@ public class CellFileViewer implements PlugIn
 		exec( jsonPath );
 	}	
 	
-	final static public void exec( final String jsonPath )
+	final public static void exec( final String jsonPath )
 	{
 		final Gson gson = new Gson();
 		
@@ -96,26 +95,21 @@ public class CellFileViewer implements PlugIn
 			return;
 		}
 		
-		final ArrayList< Pair< CellFileFloatImageLoader, VoxelDimensions > > loaders = new ArrayList<>();
+		final ArrayList< Pair< AbstractCellFileImageLoader< ?, ? >, VoxelDimensions > > loaders = new ArrayList<>();
 		for ( final CellFileImageMetaData metaData : metaDatas )
 		{
-			final CellFileFloatImageLoader loader =
-					new CellFileFloatImageLoader(
-							metaData.urlFormat,
-							metaData.getDimensions(),
-							metaData.getCellDimensions());
-			
-			loaders.add( new ValuePair< CellFileFloatImageLoader, VoxelDimensions >( loader, metaData.getVoxelDimensions() ) );
+			loaders.add( new ValuePair<>( 
+					CellFileImageLoaderFactory.createImageLoader( metaData ), 
+					metaData.getVoxelDimensions() ) );
 		}
 
-		final BigDataViewer bdv = createViewer( "Cell File Viewer", loaders );
-
+		final BigDataViewer bdv = createViewer( Paths.get( jsonPath ).getFileName() + " - Cell File Viewer", loaders );
 		bdv.getViewerFrame().setVisible( true );
 	}
 
-	public static < A extends ViewerSetupImgLoader< ? extends NumericType< ? >, ? > > BigDataViewer createViewer(
+	private static BigDataViewer createViewer(
 			final String windowTitle,
-			final List< Pair< A, VoxelDimensions > > imgLoaders )
+			final List< ? extends Pair< ? extends ViewerSetupImgLoader< ?, ? >, VoxelDimensions > > imgLoaders )
 	{
 		final ArrayList< CombinedImgLoader.SetupIdAndLoader > loaders = new ArrayList<>();
 		for ( int i = 0; i < imgLoaders.size(); i++ )
