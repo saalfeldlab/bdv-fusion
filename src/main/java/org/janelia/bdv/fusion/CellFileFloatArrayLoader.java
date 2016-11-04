@@ -144,7 +144,7 @@ public class CellFileFloatArrayLoader implements CacheArrayLoader< VolatileFloat
 			
 			@SuppressWarnings( "unchecked" )
 			final ImagePlusImg< FloatType, FloatArray > impSource =
-					( ImagePlusImg< FloatType, FloatArray > )ImagePlusImgs.from( imp );
+					( ImagePlusImg< FloatType, FloatArray > )( Object )ImagePlusImgs.from( imp );
 			
 			final RandomAccessibleInterval< FloatType > source =
 					Views.interval(

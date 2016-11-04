@@ -144,7 +144,7 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 			
 			@SuppressWarnings( "unchecked" )
 			final ImagePlusImg< UnsignedShortType, ShortArray > impSource =
-					( ImagePlusImg< UnsignedShortType, ShortArray > )ImagePlusImgs.from( imp );
+					( ImagePlusImg< UnsignedShortType, ShortArray > )( Object )ImagePlusImgs.from( imp );
 			
 			final RandomAccessibleInterval< UnsignedShortType > source =
 					Views.interval(
