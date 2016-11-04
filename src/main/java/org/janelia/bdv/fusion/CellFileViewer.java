@@ -127,15 +127,7 @@ public class CellFileViewer implements PlugIn
 		for ( int i = 0; i < loaders.size(); i++ )
 		{
 			final CombinedImgLoader.SetupIdAndLoader loader  = loaders.get( i );
-			final VoxelDimensions voxelDimensions = metaDatas[ i ].getVoxelDimensions();
-			final AffineTransform3D calibrationTransform = new AffineTransform3D();
-			calibrationTransform.set(
-					1, -0.30, -0.25, 0,
-					0, 1.25 * voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
-					0, 0, 0.85 * voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
-//					1, 0, 0, 0,
-//					0, voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
-//					0, 0, voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
+			final AffineTransform3D calibrationTransform = metaDatas[ i ].getTransform();
 			final ViewRegistration viewRegistration = new ViewRegistration( 0, loader.setupId );
 			viewRegistration.preconcatenateTransform( new ViewTransformAffine( "calibration", calibrationTransform ));
 			viewRegistrationsList.add( viewRegistration );

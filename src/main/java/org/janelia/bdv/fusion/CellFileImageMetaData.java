@@ -18,6 +18,7 @@ package org.janelia.bdv.fusion;
 
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.VoxelDimensions;
+import net.imglib2.realtransform.AffineTransform3D;
 
 /**
  * 
@@ -34,6 +35,13 @@ public class CellFileImageMetaData
 	public double[] voxelSize = new double[]{ 80, 80, 150 };
 	public double displayRangeMin = 0, displayRangeMax = 0xffff;
 	public String unit = "nm";
+	
+	public double[][] transform = new double[][]
+	{
+		new double[] { 1, 0, 0, 0 },
+		new double[] { 0, 1, 0, 0 },
+		new double[] { 0, 0, 1, 0 }
+	};
 	
 	public long[][] getDimensions()
 	{
@@ -57,5 +65,21 @@ public class CellFileImageMetaData
 	public VoxelDimensions getVoxelDimensions()
 	{
 		return new FinalVoxelDimensions( unit, voxelSize );
+	}
+	
+	public AffineTransform3D getTransform()
+	{
+		final double[][] voxelTransform = new double[][] {
+				transform[ 0 ].clone(),
+				transform[ 1 ].clone(),
+				transform[ 2 ].clone()
+		};
+		
+		voxelTransform[ 1 ][ 1 ] *= voxelSize[ 1 ] / voxelSize[ 0 ];
+		voxelTransform[ 2 ][ 2 ] *= voxelSize[ 2 ] / voxelSize[ 0 ];
+		
+		final AffineTransform3D ret = new AffineTransform3D();
+		ret.set( voxelTransform );
+		return ret;
 	}
 }
