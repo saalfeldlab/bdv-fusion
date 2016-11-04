@@ -6,18 +6,14 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.janelia.stitching.Boundaries;
-import org.janelia.stitching.TileInfo;
-import org.janelia.stitching.TileInfoJSONProvider;
-import org.janelia.stitching.TileOperations;
-
 import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 
 import bdv.BigDataViewer;
 import bdv.ViewerSetupImgLoader;
@@ -34,16 +30,15 @@ import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
 import bdv.viewer.render.AccumulateProjectorFactory;
+import fiji.util.gui.GenericDialogPlus;
+import ij.plugin.PlugIn;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
 import mpicbg.spim.data.registration.ViewRegistrations;
-import mpicbg.spim.data.registration.ViewTransform;
 import mpicbg.spim.data.registration.ViewTransformAffine;
-import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.VoxelDimensions;
-import net.imglib2.realtransform.AffineGet;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
 import net.imglib2.type.numeric.NumericType;
@@ -64,47 +59,56 @@ import net.imglib2.util.ValuePair;
  * @author Igor Pisarev
  */
 
-public class BDVFusionOld
+public class CellFileViewer implements PlugIn
 {
-	public static void main( final String... args ) throws FileNotFoundException, IOException
+	protected static String jsonPath = "";
+	
+	final public static void main( String... args )
 	{
-		//final double[] alignment = new double[] { -6, 1.5, -2 };
-		final double[] alignment = new double[] { 0,0,0 };
-
-		final ArrayList< Pair< StitchingUnsignedShortLoader, VoxelDimensions > > loaders = new ArrayList<>();
-		double[] offset = null;
-		for ( final String arg : args )
+		exec( args[ 0 ] );
+	}
+	
+	public void run( final String args )
+	{
+		final GenericDialogPlus gd = new GenericDialogPlus( "Cell File Viewer" );
+		gd.addFileField( "JSON_File: ", jsonPath);
+		gd.showDialog();
+		if ( gd.wasCanceled() )
+			return;
+		
+		jsonPath = gd.getNextString();
+		
+		exec( jsonPath );
+	}	
+	
+	final static public void exec( final String jsonPath )
+	{
+		final Gson gson = new Gson();
+		
+		CellFileImageMetaData[] metaDatas;
+		try
 		{
-			final TileInfo[] tileInfos = TileInfoJSONProvider.loadTilesConfiguration( arg );
-			double[] currOffset = null;
-
-			if ( offset == null )
-			{
-				final Boundaries space = TileOperations.getCollectionBoundaries( tileInfos );
-				System.out.println( "Space of the first configuration is " + Arrays.toString( space.getMin() ) );
-				offset = new double[ space.numDimensions() ];
-				for ( int d = 0; d < offset.length; d++ )
-					offset[ d ] = -space.min( d );
-				currOffset = offset;
-			}
-			else
-			{
-				currOffset = offset.clone();
-				for ( int d = 0; d < offset.length; d++ )
-					currOffset[ d ] += alignment[ d ];
-			}
-
-			TileOperations.translateTiles( tileInfos, currOffset );
-
-			final StitchingUnsignedShortLoader loader = new StitchingUnsignedShortLoader( tileInfos, loaders.size(), new int[] { 128, 128, 128 } );
-			loaders.add( new ValuePair<StitchingUnsignedShortLoader, VoxelDimensions>( loader, new FinalVoxelDimensions( "nm", 80, 80, 150 ) ) );
+			metaDatas = gson.fromJson( new FileReader( jsonPath ), CellFileImageMetaData[].class );
+		}
+		catch ( JsonSyntaxException | JsonIOException | FileNotFoundException e )
+		{
+			e.printStackTrace();
+			return;
+		}
+		
+		final ArrayList< Pair< CellFileFloatImageLoader, VoxelDimensions > > loaders = new ArrayList<>();
+		for ( final CellFileImageMetaData metaData : metaDatas )
+		{
+			final CellFileFloatImageLoader loader =
+					new CellFileFloatImageLoader(
+							metaData.urlFormat,
+							metaData.getDimensions(),
+							metaData.getCellDimensions());
+			
+			loaders.add( new ValuePair< CellFileFloatImageLoader, VoxelDimensions >( loader, metaData.getVoxelDimensions() ) );
 		}
 
-		/* this is how to save the whole thing into HDF5 */
-		//			RandomAccessibleInterval< UnsignedShortType > img = loader.getImage( 0, ImgLoaderHints.LOAD_COMPLETELY );
-		//			H5Utils.saveUnsignedLong( img, file, "/volumes/raw", new long[]{64, 64, 64} );
-
-		final BigDataViewer bdv = createViewer( "StitchingViewer", loaders );
+		final BigDataViewer bdv = createViewer( "Cell File Viewer", loaders );
 
 		bdv.getViewerFrame().setVisible( true );
 	}
@@ -136,9 +140,12 @@ public class BDVFusionOld
 			final VoxelDimensions voxelDimensions = imgLoaders.get( i ).getB();
 			final AffineTransform3D calibrationTransform = new AffineTransform3D();
 			calibrationTransform.set(
-					1, 0, 0, 0,
-					0, voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
-					0, 0, voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
+					1, -0.30, -0.25, 0,
+					0, 1.25 * voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
+					0, 0, 0.85 * voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
+//					1, 0, 0, 0,
+//					0, voxelDimensions.dimension( 1 ) / voxelDimensions.dimension( 0 ), 0, 0,
+//					0, 0, voxelDimensions.dimension( 2 ) / voxelDimensions.dimension( 0 ), 0 );
 			final ViewRegistration viewRegistration = new ViewRegistration( 0, loader.setupId );
 			viewRegistration.preconcatenateTransform( new ViewTransformAffine( "calibration", calibrationTransform ));
 			viewRegistrationsList.add( viewRegistration );

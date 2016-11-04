@@ -26,7 +26,7 @@ import mpicbg.spim.data.sequence.VoxelDimensions;
  */
 public class CellFileImageMetaData
 {
-	public String baseFolder = "";
+	public String urlFormat = "";
 	public int numScales = 0;
 	public long[] imageDimensions = new long[ 3 ];
 	public int[] cellDimensions = new int[ 3 ];

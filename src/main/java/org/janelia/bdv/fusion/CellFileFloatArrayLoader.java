@@ -58,17 +58,22 @@ public class CellFileFloatArrayLoader implements CacheArrayLoader< VolatileFloat
 	/**
 	 * <p>Create a {@link CacheArrayLoader} for a file per cell source.
 	 * Cells are addressed, in this order, by their</p>
-	 * <ul>
+	 * <ol>
 	 * <li>scale level,</li>
-	 * <li>column,</li>
-	 * <li>row,</li>
-	 * <li>slice</li>
-	 * </ul>
+	 * <li>column (cell grid coordinates),</li>
+	 * <li>row (cell grid coordinates),</li>
+	 * <li>slice (cell grid coordinates),</li>
+	 * <li>x (left pixel coordinates of the cell),</li>
+	 * <li>y (top pixel coordinates of the cell),</li>
+	 * <li>z (front pixel coordinates of the cell)</li>
+	 * </ol>
 	 * <p><code>urlFormat</code> specifies how these parameters are used
 	 * to generate a URL referencing the tile.  Examples:</p>
 	 *
 	 * <dl>
-	 * <dd>Stitching export version 2</dd>
+	 * <dd>Stitching export version 0</dd>
+	 * <dt>"/home/saalfeld/test/channel1/%1$d/%7$d/%6$d/%5$d.tif"</dt>
+     * <dd>Stitching export version 1</dd>
 	 * <dt>"/home/saalfeld/test/channel1/%1$d/%4$d/%3$d/%2$d.tif"</dt>
      * </dl>
 	 *
@@ -103,7 +108,10 @@ public class CellFileFloatArrayLoader implements CacheArrayLoader< VolatileFloat
 						level,
 						min[ 0 ] / cellSize[ 0 ],
 						min[ 1 ] / cellSize[ 1 ],
-						min[ 2 ] / cellSize[ 2 ] );
+						min[ 2 ] / cellSize[ 2 ],
+						min[ 0 ],
+						min[ 1 ],
+						min[ 2 ] );
 		
 		int numEntities = 1;
 		for ( int i = 0; i < dimensions.length; ++i )

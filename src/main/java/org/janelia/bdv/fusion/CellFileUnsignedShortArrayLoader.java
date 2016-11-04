@@ -30,28 +30,20 @@ package org.janelia.bdv.fusion;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-
-import org.janelia.stitching.Utils;
 
 import bdv.img.cache.CacheArrayLoader;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.process.ImageConverter;
-import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.array.ArrayCursor;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.ShortArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileShortArray;
 import net.imglib2.img.imageplus.ImagePlusImg;
 import net.imglib2.img.imageplus.ImagePlusImgs;
-import net.imglib2.meta.IntervalUtils;
 import net.imglib2.type.numeric.integer.UnsignedShortType;
-import net.imglib2.type.numeric.real.FloatType;
-import net.imglib2.util.Intervals;
 import net.imglib2.util.Pair;
 import net.imglib2.view.Views;
 
@@ -66,17 +58,22 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 	/**
 	 * <p>Create a {@link CacheArrayLoader} for a file per cell source.
 	 * Cells are addressed, in this order, by their</p>
-	 * <ul>
+	 * <ol>
 	 * <li>scale level,</li>
-	 * <li>column,</li>
-	 * <li>row,</li>
-	 * <li>slice</li>
-	 * </ul>
+	 * <li>column (cell grid coordinates),</li>
+	 * <li>row (cell grid coordinates),</li>
+	 * <li>slice (cell grid coordinates),</li>
+	 * <li>x (left pixel coordinates of the cell),</li>
+	 * <li>y (top pixel coordinates of the cell),</li>
+	 * <li>z (front pixel coordinates of the cell)</li>
+	 * </ol>
 	 * <p><code>urlFormat</code> specifies how these parameters are used
 	 * to generate a URL referencing the tile.  Examples:</p>
 	 *
 	 * <dl>
-	 * <dd>Stitching export version 2</dd>
+	 * <dd>Stitching export version 0</dd>
+	 * <dt>"/home/saalfeld/test/channel1/%1$d/%7$d/%6$d/%5$d.tif"</dt>
+     * <dd>Stitching export version 1</dd>
 	 * <dt>"/home/saalfeld/test/channel1/%1$d/%4$d/%3$d/%2$d.tif"</dt>
      * </dl>
 	 *
@@ -111,7 +108,10 @@ public class CellFileUnsignedShortArrayLoader implements CacheArrayLoader< Volat
 						level,
 						min[ 0 ] / cellSize[ 0 ],
 						min[ 1 ] / cellSize[ 1 ],
-						min[ 2 ] / cellSize[ 2 ] );
+						min[ 2 ] / cellSize[ 2 ],
+						min[ 0 ],
+						min[ 1 ],
+						min[ 2 ] );
 		
 		int numEntities = 1;
 		for ( int i = 0; i < dimensions.length; ++i )
