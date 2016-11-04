@@ -193,7 +193,7 @@ public class CellFileViewer implements PlugIn
 		for ( final ConverterSetup converterSetup : converterSetups )
 		{
 			final int i = converterSetup.getSetupId();
-			converterSetup.setDisplayRange( metaDatas[ i ].displayRangeMin, metaDatas[ i ].displayRangeMax );
+			converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
 			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
 		}
 

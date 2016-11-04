@@ -7,18 +7,18 @@ public class CellFileImageLoaderFactory
 {
 	public static AbstractCellFileImageLoader< ? extends NativeType< ? >, ? extends Volatile< ? > > createImageLoader( final CellFileImageMetaData metaData )
 	{
-		switch ( metaData.imageType ) 
+		switch ( metaData.getImageType() ) 
 		{
 		case "GRAY16":
 			return new CellFileUnsignedShortImageLoader( 
-					metaData.urlFormat, 
+					metaData.getUrlFormat(), 
 					metaData.getDimensions(), 
 					metaData.getCellDimensions() );
 			
 		case "GRAY32":
 		default:
 			return new CellFileFloatImageLoader( 
-					metaData.urlFormat, 
+					metaData.getUrlFormat(), 
 					metaData.getDimensions(), 
 					metaData.getCellDimensions() );
 		}

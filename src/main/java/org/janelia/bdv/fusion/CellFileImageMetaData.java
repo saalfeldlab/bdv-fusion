@@ -27,21 +27,41 @@ import net.imglib2.realtransform.AffineTransform3D;
  */
 public class CellFileImageMetaData
 {
-	public String urlFormat = "";
-	public String imageType = "";
-	public int numScales = 0;
-	public long[] imageDimensions = new long[ 3 ];
-	public int[] cellDimensions = new int[ 3 ];
-	public double[] voxelSize = new double[]{ 80, 80, 150 };
-	public double displayRangeMin = 0, displayRangeMax = 0xffff;
-	public String unit = "nm";
+	private String urlFormat = "";
+	private String imageType = "";
+	private int numScales = 0;
+	private long[] imageDimensions = new long[ 3 ];
+	private int[] cellDimensions = new int[ 3 ];
 	
-	public double[][] transform = new double[][]
-	{
+	private double[][] transform = new double[][] {
 		new double[] { 1, 0, 0, 0 },
 		new double[] { 0, 1, 0, 0 },
 		new double[] { 0, 0, 1, 0 }
 	};
+
+	private double displayRangeMin = 0, displayRangeMax = 0xffff;
+	private double[] voxelSize = new double[]{ 80, 80, 150 };
+	
+	private String unit = "nm";
+	
+	
+	public String getUrlFormat()
+	{
+		return urlFormat;
+	}
+	public String getImageType()
+	{
+		return imageType;
+	}
+	
+	public double getDisplayRangeMin()
+	{
+		return displayRangeMin;
+	}
+	public double getDisplayRangeMax()
+	{
+		return displayRangeMax;
+	}
 	
 	public long[][] getDimensions()
 	{
