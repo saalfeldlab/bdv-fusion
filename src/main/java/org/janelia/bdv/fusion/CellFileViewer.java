@@ -7,7 +7,6 @@ import java.io.FileReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -16,7 +15,6 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 import bdv.BigDataViewer;
-import bdv.ViewerSetupImgLoader;
 import bdv.bigcat.CombinedImgLoader;
 import bdv.bigcat.composite.ARGBCompositeAlphaAdd;
 import bdv.bigcat.composite.Composite;
@@ -41,8 +39,6 @@ import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.numeric.ARGBType;
-import net.imglib2.util.Pair;
-import net.imglib2.util.ValuePair;
 
 /**
  * {@link BigDataViewer}-based application for exploring large datasets that are cut into tiles.

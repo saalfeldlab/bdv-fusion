@@ -9,6 +9,12 @@ public class CellFileImageLoaderFactory
 	{
 		switch ( metaData.getImageType() ) 
 		{
+		case "GRAY8":
+			return new CellFileUnsignedByteImageLoader( 
+					metaData.getUrlFormat(), 
+					metaData.getDimensions(), 
+					metaData.getCellDimensions() );
+			
 		case "GRAY16":
 			return new CellFileUnsignedShortImageLoader( 
 					metaData.getUrlFormat(), 
