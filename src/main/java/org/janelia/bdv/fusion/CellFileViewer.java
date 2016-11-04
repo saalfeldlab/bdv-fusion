@@ -42,14 +42,10 @@ import net.imglib2.type.numeric.ARGBType;
 
 /**
  * {@link BigDataViewer}-based application for exploring large datasets that are cut into tiles.
- * Takes a path to a tile configuration file as a command line argument
- * and displays it performing on-the-fly fusion (simple copying).
- * It should be formatted as JSON array of {@link TileInfo} objects.
+ * Takes a path to a fusion export configuration file as a command line argument
+ * or via Fiji's Plugins &gt; Analyze &gt; Cell File Viewer.
  *
- * For best performance, input tiles should have a size of 64x64x64 pixels and not overlap.
- *
- * You can pass an arbitrary number of input tile configurations and the images will be blended.
- * It has predefined colors for the first three images, and random colors will be generated for the rest in case you pass more.
+ * Blending is supported for multiple channels defined in the configuration file.
  *
  * @author Igor Pisarev
  */
