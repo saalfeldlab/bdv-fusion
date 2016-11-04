@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import javax.swing.SwingUtilities;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -181,14 +183,23 @@ public class CellFileViewer implements PlugIn
 				null,
 				options );
 
-		// Create separate min-max group for every channel
-		for ( final ConverterSetup converterSetup : converterSetups )
-		{
-			final int i = converterSetup.getSetupId();
-			converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
-			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
-		}
-
+		
+		// FIXME: Create separate min-max group for every channel after BDV initialization
+		// If specified before calling BDV constructor, it ignores this and uses display range of the first setup
+		final Runnable createMinMaxGroups = () -> {
+			for ( final ConverterSetup converterSetup : converterSetups )
+			{
+				final int i = converterSetup.getSetupId();
+				converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
+				bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
+			}
+		};
+		if ( SwingUtilities.isEventDispatchThread() )
+			createMinMaxGroups.run();
+		else
+			SwingUtilities.invokeLater( createMinMaxGroups );
+		
+		
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
 
 		return bdv;
