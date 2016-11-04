@@ -94,26 +94,22 @@ public class CellFileViewer implements PlugIn
 			e.printStackTrace();
 			return;
 		}
-		
-		final ArrayList< Pair< AbstractCellFileImageLoader< ?, ? >, VoxelDimensions > > loaders = new ArrayList<>();
-		for ( final CellFileImageMetaData metaData : metaDatas )
-		{
-			loaders.add( new ValuePair<>( 
-					CellFileImageLoaderFactory.createImageLoader( metaData ), 
-					metaData.getVoxelDimensions() ) );
-		}
 
-		final BigDataViewer bdv = createViewer( Paths.get( jsonPath ).getFileName() + " - Cell File Viewer", loaders );
+		final BigDataViewer bdv = createViewer( Paths.get( jsonPath ).getFileName() + " - Cell File Viewer", metaDatas );
 		bdv.getViewerFrame().setVisible( true );
 	}
 
 	private static BigDataViewer createViewer(
 			final String windowTitle,
-			final List< ? extends Pair< ? extends ViewerSetupImgLoader< ?, ? >, VoxelDimensions > > imgLoaders )
+			final CellFileImageMetaData[] metaDatas )
 	{
+		final ArrayList< AbstractCellFileImageLoader< ?, ? > > imgLoaders = new ArrayList<>();
+		for ( final CellFileImageMetaData metaData : metaDatas )
+			imgLoaders.add( CellFileImageLoaderFactory.createImageLoader( metaData ) );
+
 		final ArrayList< CombinedImgLoader.SetupIdAndLoader > loaders = new ArrayList<>();
 		for ( int i = 0; i < imgLoaders.size(); i++ )
-			loaders.add( setupIdAndLoader( i, imgLoaders.get( i ).getA() ) );
+			loaders.add( setupIdAndLoader( i, imgLoaders.get( i ) ) );
 		final CombinedImgLoader combinedImgLoader = new CombinedImgLoader( loaders.toArray( new CombinedImgLoader.SetupIdAndLoader[ 0 ] ) );
 
 		final ArrayList< TimePoint > timePointsList = new ArrayList< >();
@@ -123,7 +119,7 @@ public class CellFileViewer implements PlugIn
 		for ( int i = 0; i < loaders.size(); i++ )
 		{
 			final CombinedImgLoader.SetupIdAndLoader loader  = loaders.get( i );
-			final VoxelDimensions voxelDimensions = imgLoaders.get( i ).getB();
+			final VoxelDimensions voxelDimensions = metaDatas[ i ].getVoxelDimensions();
 			setups.put( loader.setupId, new BasicViewSetup( loader.setupId, null, null, voxelDimensions ) );
 		}
 
@@ -131,7 +127,7 @@ public class CellFileViewer implements PlugIn
 		for ( int i = 0; i < loaders.size(); i++ )
 		{
 			final CombinedImgLoader.SetupIdAndLoader loader  = loaders.get( i );
-			final VoxelDimensions voxelDimensions = imgLoaders.get( i ).getB();
+			final VoxelDimensions voxelDimensions = metaDatas[ i ].getVoxelDimensions();
 			final AffineTransform3D calibrationTransform = new AffineTransform3D();
 			calibrationTransform.set(
 					1, -0.30, -0.25, 0,
@@ -165,15 +161,10 @@ public class CellFileViewer implements PlugIn
 		};
 
 		final Random rnd = new Random();
-		for ( int j = 0; j < loaders.size(); j++ )
+		for ( final ConverterSetup converterSetup : converterSetups )
 		{
-			final ConverterSetup converterSetup = converterSetups.get( j );
 			final int i = converterSetup.getSetupId();
 			
-			// TODO hack
-			//converterSetup.setDisplayRange( 0, 0xff );
-			converterSetup.setDisplayRange( 90, 512 );
-
 			if ( converterSetups.size() > 1 )
 			{
 				if ( i < predefinedColors.length )
@@ -183,7 +174,7 @@ public class CellFileViewer implements PlugIn
 			}
 		}
 
-		/* composites */
+		// Set up composites
 		final HashMap< Source< ? >, Composite< ARGBType, ARGBType > > sourceCompositesMap = new HashMap< >();
 		sourceCompositesMap.put( sources.get( 0 ).getSpimSource(), new CompositeCopy<>() );
 		for ( int i = 1; i < sources.size(); ++i )
@@ -196,7 +187,23 @@ public class CellFileViewer implements PlugIn
 				.numRenderingThreads( 16 )
 				.targetRenderNanos( 10000000 );
 
-		final BigDataViewer bdv = new BigDataViewer( converterSetups, sources, null, timepoints.size(), combinedImgLoader.getCache(), windowTitle, null, options );
+		final BigDataViewer bdv = new BigDataViewer( 
+				converterSetups, 
+				sources, 
+				null,
+				timepoints.size(), 
+				combinedImgLoader.getCache(), 
+				windowTitle, 
+				null,
+				options );
+
+		// Create separate min-max group for every channel
+		for ( final ConverterSetup converterSetup : converterSetups )
+		{
+			final int i = converterSetup.getSetupId();
+			converterSetup.setDisplayRange( metaDatas[ i ].displayRangeMin, metaDatas[ i ].displayRangeMax );
+			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
+		}
 
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
 

@@ -32,6 +32,7 @@ public class CellFileImageMetaData
 	public long[] imageDimensions = new long[ 3 ];
 	public int[] cellDimensions = new int[ 3 ];
 	public double[] voxelSize = new double[]{ 80, 80, 150 };
+	public double displayRangeMin = 0, displayRangeMax = 0xffff;
 	public String unit = "nm";
 	
 	public long[][] getDimensions()
