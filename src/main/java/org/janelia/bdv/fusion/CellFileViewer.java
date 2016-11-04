@@ -43,7 +43,7 @@ import net.imglib2.type.numeric.ARGBType;
 /**
  * {@link BigDataViewer}-based application for exploring large datasets that are cut into tiles.
  * Takes a path to a fusion export configuration file as a command line argument
- * or via Fiji's Plugins &gt; Analyze &gt; Cell File Viewer.
+ * or via Fiji's Plugins &gt; BigDataViewer &gt; Cell File Viewer.
  *
  * Blending is supported for multiple channels defined in the configuration file.
  *
