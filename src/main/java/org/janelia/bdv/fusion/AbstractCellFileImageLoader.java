@@ -31,10 +31,11 @@ package org.janelia.bdv.fusion;
 import bdv.AbstractViewerSetupImgLoader;
 import bdv.ViewerImgLoader;
 import bdv.ViewerSetupImgLoader;
+import bdv.cache.CacheControl;
+import bdv.cache.CacheHints;
+import bdv.cache.LoadingStrategy;
 import bdv.img.cache.CacheArrayLoader;
-import bdv.img.cache.CacheHints;
 import bdv.img.cache.CachedCellImg;
-import bdv.img.cache.LoadingStrategy;
 import bdv.img.cache.VolatileGlobalCellCache;
 import bdv.img.cache.VolatileImgCells;
 import bdv.img.cache.VolatileImgCells.CellCache;
@@ -94,7 +95,7 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 			mipmapTransforms[ i ] = mipmapTransform;
 		}
 
-		cache = new VolatileGlobalCellCache( 1, 1, numScales, 10 );
+		cache = new VolatileGlobalCellCache( numScales, 10 );
 	}
 
 
@@ -109,7 +110,7 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 	}
 
 	@Override
-	public VolatileGlobalCellCache getCache()
+	public CacheControl getCacheControl()
 	{
 		return cache;
 	}

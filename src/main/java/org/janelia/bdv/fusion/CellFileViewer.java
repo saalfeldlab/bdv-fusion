@@ -178,27 +178,19 @@ public class CellFileViewer implements PlugIn
 				sources, 
 				null,
 				timepoints.size(), 
-				combinedImgLoader.getCache(), 
+				combinedImgLoader.getCacheControl(), 
 				windowTitle, 
 				null,
 				options );
 
-		
 		// FIXME: Create separate min-max group for every channel after BDV initialization
 		// If specified before calling BDV constructor, it ignores this and uses display range of the first setup
-		final Runnable createMinMaxGroups = () -> {
-			for ( final ConverterSetup converterSetup : converterSetups )
-			{
-				final int i = converterSetup.getSetupId();
-				converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
-				bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
-			}
-		};
-		if ( SwingUtilities.isEventDispatchThread() )
-			createMinMaxGroups.run();
-		else
-			SwingUtilities.invokeLater( createMinMaxGroups );
-		
+		for ( final ConverterSetup converterSetup : converterSetups )
+		{
+			final int i = converterSetup.getSetupId();
+			converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
+			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
+		}
 		
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
 
