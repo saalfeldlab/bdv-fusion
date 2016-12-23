@@ -40,9 +40,9 @@ public class CellFileImageMetaData
 	};
 
 	private double displayRangeMin = 0, displayRangeMax = 0xffff;
-	private double[] voxelSize = new double[]{ 80, 80, 150 };
 	
-	private String unit = "nm";
+	private double[] voxelDimensions = new double[]{ 1, 1, 1 };
+	private String voxelUnit = "nm";
 	
 	
 	public String getUrlFormat()
@@ -84,7 +84,7 @@ public class CellFileImageMetaData
 
 	public VoxelDimensions getVoxelDimensions()
 	{
-		return new FinalVoxelDimensions( unit, voxelSize );
+		return new FinalVoxelDimensions( voxelUnit, voxelDimensions );
 	}
 	
 	public AffineTransform3D getTransform()
@@ -95,8 +95,8 @@ public class CellFileImageMetaData
 				transform[ 2 ].clone()
 		};
 		
-		voxelTransform[ 1 ][ 1 ] *= voxelSize[ 1 ] / voxelSize[ 0 ];
-		voxelTransform[ 2 ][ 2 ] *= voxelSize[ 2 ] / voxelSize[ 0 ];
+		voxelTransform[ 1 ][ 1 ] *= voxelDimensions[ 1 ] / voxelDimensions[ 0 ];
+		voxelTransform[ 2 ][ 2 ] *= voxelDimensions[ 2 ] / voxelDimensions[ 0 ];
 		
 		final AffineTransform3D ret = new AffineTransform3D();
 		ret.set( voxelTransform );
