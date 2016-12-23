@@ -45,7 +45,7 @@ public class CellFileFloatImageLoader extends AbstractCellFileImageLoader< Float
 			final long[][] dimensions,
 			final int[][] cellDimensions)
 	{
-		super( cellFormat, dimensions, cellDimensions, new FloatType(), new VolatileFloatType() );
+		super( dimensions, cellDimensions, new FloatType(), new VolatileFloatType() );
 		
 		loader = new CellFileFloatArrayLoader( cellFormat, cellDimensions );
 	}
@@ -53,7 +53,7 @@ public class CellFileFloatImageLoader extends AbstractCellFileImageLoader< Float
 	@Override
 	public RandomAccessibleInterval< FloatType > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 	{
-		final CachedCellImg< FloatType, VolatileFloatArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.BLOCKING );
+		final CachedCellImg< FloatType, VolatileFloatArray > img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.BLOCKING );
 		final FloatType linkedType = new FloatType( img );
 		img.setLinkedType( linkedType );
 		return img;
@@ -62,7 +62,7 @@ public class CellFileFloatImageLoader extends AbstractCellFileImageLoader< Float
 	@Override
 	public RandomAccessibleInterval< VolatileFloatType > getVolatileImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 	{
-		final CachedCellImg< VolatileFloatType, VolatileFloatArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.VOLATILE );
+		final CachedCellImg< VolatileFloatType, VolatileFloatArray > img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.VOLATILE );
 		final VolatileFloatType linkedType = new VolatileFloatType( img );
 		img.setLinkedType( linkedType );
 		return img;

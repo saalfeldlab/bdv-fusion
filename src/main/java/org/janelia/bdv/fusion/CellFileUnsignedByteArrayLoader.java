@@ -28,148 +28,35 @@
  */
 package org.janelia.bdv.fusion;
 
-import java.io.File;
-import java.io.IOException;
-
-import bdv.img.cache.CacheArrayLoader;
-import ij.IJ;
-import ij.ImagePlus;
-import ij.process.ImageConverter;
-import net.imglib2.FinalInterval;
 import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
-import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileByteArray;
-import net.imglib2.img.imageplus.ImagePlusImg;
-import net.imglib2.img.imageplus.ImagePlusImgs;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
-import net.imglib2.util.Pair;
-import net.imglib2.view.Views;
 
-public class CellFileUnsignedByteArrayLoader implements CacheArrayLoader< VolatileByteArray >
+public class CellFileUnsignedByteArrayLoader extends AbstractCellFileArrayLoader< UnsignedByteType, VolatileByteArray >
 {
-	private VolatileByteArray theEmptyArray;
-
-	private final String cellFormat;
-	
-	private int[][] cellSizes;
-
-	/**
-	 * <p>Create a {@link CacheArrayLoader} for a file per cell source.
-	 * Cells are addressed, in this order, by their</p>
-	 * <ol>
-	 * <li>scale level,</li>
-	 * <li>column (cell grid coordinates),</li>
-	 * <li>row (cell grid coordinates),</li>
-	 * <li>slice (cell grid coordinates),</li>
-	 * <li>x (left pixel coordinates of the cell),</li>
-	 * <li>y (top pixel coordinates of the cell),</li>
-	 * <li>z (front pixel coordinates of the cell)</li>
-	 * </ol>
-	 * <p><code>urlFormat</code> specifies how these parameters are used
-	 * to generate a URL referencing the tile.  Examples:</p>
-	 *
-	 * <dl>
-	 * <dd>Stitching export version 0</dd>
-	 * <dt>"/home/saalfeld/test/channel1/%1$d/%7$d/%6$d/%5$d.tif"</dt>
-     * <dd>Stitching export version 1</dd>
-	 * <dt>"/home/saalfeld/test/channel1/%1$d/%4$d/%3$d/%2$d.tif"</dt>
-     * </dl>
-	 *
-	 * @param cellFormat
-	 */
-	public CellFileUnsignedByteArrayLoader( final String cellFormat, final int[][] cellSizes )
+	public CellFileUnsignedByteArrayLoader( final String cellFormat, final int[][] cellSizes ) 
 	{
-		theEmptyArray = new VolatileByteArray( 1, false );
-		this.cellFormat = cellFormat;
-		this.cellSizes = cellSizes;
+		super( cellFormat, cellSizes, new ArrayFactory< UnsignedByteType, VolatileByteArray >() 
+			{
+				@Override
+				public VolatileByteArray createInvalidVolatileArray( final int numEntities )
+				{
+					return new VolatileByteArray( numEntities, false );
+				}
+
+				@Override
+				public RandomAccessibleInterval< UnsignedByteType > wrapArray( final VolatileByteArray data, final long[] dimensions )
+				{
+					return ArrayImgs.unsignedBytes( data.getCurrentStorageArray(), dimensions );
+				}
+			} 
+		);
 	}
 
 	@Override
 	public int getBytesPerElement()
 	{
 		return 1;
-	}
-
-	@Override
-	final public VolatileByteArray loadArray(
-			final int timepoint,
-			final int setup,
-			final int level,
-			final int[] dimensions,
-			final long[] min ) throws InterruptedException
-	{
-		final int[] cellSize = cellSizes[ level ];
-		
-		final String cellString =
-				String.format(
-						cellFormat,
-						level,
-						min[ 0 ] / cellSize[ 0 ],
-						min[ 1 ] / cellSize[ 1 ],
-						min[ 2 ] / cellSize[ 2 ],
-						min[ 0 ],
-						min[ 1 ],
-						min[ 2 ] );
-		
-		int numEntities = 1;
-		for ( int i = 0; i < dimensions.length; ++i )
-			numEntities *= dimensions[ i ];
-		final byte[] data = new byte[ numEntities ];
-		
-		try
-		{
-			final File file = new File( cellString );
-			if ( !file.exists() )
-				throw new IOException( "file does not exist" );
-			
-			final ImagePlus imp = IJ.openImage( cellString );
-			
-			if ( imp == null )
-				throw new IOException( "imp == null" );
-			
-			if ( imp.getType() != ImagePlus.GRAY8 )
-				new ImageConverter( imp ).convertToGray8();
-			
-			final long[] longDimensions = new long[]{
-					dimensions[ 0 ],
-					dimensions[ 1 ],
-					dimensions[ 2 ] };
-			
-			final ArrayImg< UnsignedByteType, ByteArray > target =
-					ArrayImgs.unsignedBytes(
-							data,
-							longDimensions );
-			
-			@SuppressWarnings( "unchecked" )
-			final ImagePlusImg< UnsignedByteType, ByteArray > impSource =
-					( ImagePlusImg< UnsignedByteType, ByteArray > )( Object )ImagePlusImgs.from( imp );
-			
-			final RandomAccessibleInterval< UnsignedByteType > source =
-					Views.interval(
-							Views.extendZero( impSource ),
-							new FinalInterval( longDimensions ) );
-			
-			for ( final Pair< UnsignedByteType, UnsignedByteType > pair : Views.interval( Views.pair( source, target ), target ) )
-				pair.getB().set( pair.getA() );
-		}
-		catch ( final IOException e ) {
-//			System.out.println( "failed loading tile " + cellString );
-		}
-		
-		return new VolatileByteArray( data, true );
-	}
-
-
-	@Override
-	public VolatileByteArray emptyArray( final int[] dimensions )
-	{
-		int numEntities = 1;
-		for ( int i = 0; i < dimensions.length; ++i )
-			numEntities *= dimensions[ i ];
-		if ( theEmptyArray.getCurrentStorageArray().length < numEntities )
-			theEmptyArray = new VolatileByteArray( numEntities, false );
-		return theEmptyArray;
 	}
 }

@@ -45,7 +45,7 @@ public class CellFileUnsignedByteImageLoader extends AbstractCellFileImageLoader
 			final long[][] dimensions,
 			final int[][] cellDimensions)
 	{
-		super( cellFormat, dimensions, cellDimensions, new UnsignedByteType(), new VolatileUnsignedByteType() );
+		super( dimensions, cellDimensions, new UnsignedByteType(), new VolatileUnsignedByteType() );
 		
 		loader = new CellFileUnsignedByteArrayLoader( cellFormat, cellDimensions );
 	}
@@ -53,7 +53,7 @@ public class CellFileUnsignedByteImageLoader extends AbstractCellFileImageLoader
 	@Override
 	public RandomAccessibleInterval< UnsignedByteType > getImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 	{
-		final CachedCellImg< UnsignedByteType, VolatileByteArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.BLOCKING );
+		final CachedCellImg< UnsignedByteType, VolatileByteArray > img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.BLOCKING );
 		final UnsignedByteType linkedType = new UnsignedByteType( img );
 		img.setLinkedType( linkedType );
 		return img;
@@ -62,7 +62,7 @@ public class CellFileUnsignedByteImageLoader extends AbstractCellFileImageLoader
 	@Override
 	public RandomAccessibleInterval< VolatileUnsignedByteType > getVolatileImage( final int timepointId, final int level, final ImgLoaderHint... hints )
 	{
-		final CachedCellImg< VolatileUnsignedByteType, VolatileByteArray >  img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.VOLATILE );
+		final CachedCellImg< VolatileUnsignedByteType, VolatileByteArray > img = prepareCachedImage( loader, timepointId, 0, level, LoadingStrategy.VOLATILE );
 		final VolatileUnsignedByteType linkedType = new VolatileUnsignedByteType( img );
 		img.setLinkedType( linkedType );
 		return img;

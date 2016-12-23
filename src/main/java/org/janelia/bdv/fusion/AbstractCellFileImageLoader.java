@@ -61,7 +61,6 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 	protected VolatileGlobalCellCache cache;
 
 	public AbstractCellFileImageLoader(
-			final String cellFormat,
 			final long[][] dimensions,
 			final int[][] cellDimensions,
 			final T t,

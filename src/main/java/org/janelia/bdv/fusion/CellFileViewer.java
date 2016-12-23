@@ -10,8 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import javax.swing.SwingUtilities;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -78,7 +76,7 @@ public class CellFileViewer implements PlugIn
 	{
 		final Gson gson = new Gson();
 		
-		CellFileImageMetaData[] metaDatas;
+		final CellFileImageMetaData[] metaDatas;
 		try
 		{
 			metaDatas = gson.fromJson( new FileReader( jsonPath ), CellFileImageMetaData[].class );
