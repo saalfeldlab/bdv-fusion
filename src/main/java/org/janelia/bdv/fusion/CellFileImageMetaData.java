@@ -16,12 +16,16 @@
  */
 package org.janelia.bdv.fusion;
 
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 
 /**
- * 
+ *
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  */
@@ -30,9 +34,9 @@ public class CellFileImageMetaData
 	private String urlFormat = "";
 	private String imageType = "";
 	private int numScales = 0;
-	private long[] imageDimensions = new long[ 3 ];
-	private int[] cellDimensions = new int[ 3 ];
-	
+	private Map< Integer, long[] > levelImageDimensions = new TreeMap<>();
+	private Map< Integer, int[] > levelCellDimensions = new TreeMap<>();
+
 	private double[][] transform = new double[][] {
 		new double[] { 1, 0, 0, 0 },
 		new double[] { 0, 1, 0, 0 },
@@ -40,11 +44,11 @@ public class CellFileImageMetaData
 	};
 
 	private double displayRangeMin = 0, displayRangeMax = 0xffff;
-	
+
 	private double[] voxelDimensions = new double[]{ 1, 1, 1 };
 	private String voxelUnit = "nm";
-	
-	
+
+
 	public String getUrlFormat()
 	{
 		return urlFormat;
@@ -53,7 +57,7 @@ public class CellFileImageMetaData
 	{
 		return imageType;
 	}
-	
+
 	public double getDisplayRangeMin()
 	{
 		return displayRangeMin;
@@ -62,31 +66,28 @@ public class CellFileImageMetaData
 	{
 		return displayRangeMax;
 	}
-	
-	public long[][] getDimensions()
+
+	public long[][] getImageDimensions()
 	{
-		final long[][] dimensions = new long[ numScales ][ imageDimensions.length ];
-		for ( int i = 0; i < numScales; ++i )
-			for ( int d = 0; d < imageDimensions.length; ++d )
-				dimensions[ i ][ d ] = imageDimensions[ d ] >> i;
-		
-		return dimensions; 
+		final long[][] imageDimensions = new long[ numScales ][];
+		for ( final Entry< Integer, long[] > entry : levelImageDimensions.entrySet() )
+			imageDimensions[ entry.getKey() ] = entry.getValue();
+		return imageDimensions;
 	}
-	
+
 	public int[][] getCellDimensions()
 	{
-		final int[][] levelCellDimensions = new int[ numScales ][ cellDimensions.length ];
-		for ( int i = 0; i < numScales; ++i )
-			levelCellDimensions[ i ] = cellDimensions;
-		
-		return levelCellDimensions; 
+		final int[][] cellDimensions = new int[ numScales ][];
+		for ( final Entry< Integer, int[] > entry : levelCellDimensions.entrySet() )
+			cellDimensions[ entry.getKey() ] = entry.getValue();
+		return cellDimensions;
 	}
 
 	public VoxelDimensions getVoxelDimensions()
 	{
 		return new FinalVoxelDimensions( voxelUnit, voxelDimensions );
 	}
-	
+
 	public AffineTransform3D getTransform()
 	{
 		final double[][] voxelTransform = new double[][] {
@@ -94,10 +95,10 @@ public class CellFileImageMetaData
 				transform[ 1 ].clone(),
 				transform[ 2 ].clone()
 		};
-		
+
 		voxelTransform[ 1 ][ 1 ] *= voxelDimensions[ 1 ] / voxelDimensions[ 0 ];
 		voxelTransform[ 2 ][ 2 ] *= voxelDimensions[ 2 ] / voxelDimensions[ 0 ];
-		
+
 		final AffineTransform3D ret = new AffineTransform3D();
 		ret.set( voxelTransform );
 		return ret;
