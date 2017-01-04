@@ -6,13 +6,13 @@
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
- * 
+ *
  * 1. Redistributions of source code must retain the above copyright notice,
  *    this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright notice,
  *    this list of conditions and the following disclaimer in the documentation
  *    and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -63,49 +63,33 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 	public AbstractCellFileImageLoader(
 			final long[][] dimensions,
 			final int[][] cellDimensions,
+			final int[][] downsampleFactors,
 			final T t,
 			final V v )
 	{
 		super( t, v );
-		
+
 		this.dimensions = dimensions;
 		this.cellDimensions = cellDimensions;
-		
+
 		final int numScales = dimensions.length;
 		mipmapTransforms = new AffineTransform3D[ numScales ];
 		mipmapResolutions = new double[ numScales ][];
 		for ( int i = 0; i < numScales; ++i )
 		{
-			final int si = 1 << i;
-			
-			mipmapResolutions[ i ] = new double[] { si, si, si };
-			
-			final AffineTransform3D mipmapTransform = new AffineTransform3D();
+			mipmapResolutions[ i ] = new double[ downsampleFactors[ i ].length ];
+			for ( int d = 0; d < mipmapResolutions[ i ].length; d++ )
+				mipmapResolutions[ i ][ d ] = downsampleFactors[ i ][ d ];
 
-			mipmapTransform.set( si, 0, 0 );
-			mipmapTransform.set( si, 1, 1 );
-			mipmapTransform.set( si, 2, 2 );
-
-			final double mipmapOffset = 0.5 * ( si - 1 );
-			mipmapTransform.set( mipmapOffset, 0, 3 );
-			mipmapTransform.set( mipmapOffset, 1, 3 );
-			mipmapTransform.set( mipmapOffset, 2, 3 );
-
-			mipmapTransforms[ i ] = mipmapTransform;
+			mipmapTransforms[ i ] = new AffineTransform3D();
+			for ( int d = 0; d < mipmapResolutions[ i ].length; d++ )
+			{
+				mipmapTransforms[ i ].set( mipmapResolutions[ i ][ d ], d, d );
+				mipmapTransforms[ i ].set( 0.5 * ( mipmapResolutions[ i ][ d ] - 1 ), d, 3 );
+			}
 		}
 
 		cache = new VolatileGlobalCellCache( numScales, 10 );
-	}
-
-
-	final static public int getNumScales( long width, long height, final long tileWidth, final long tileHeight )
-	{
-		int i = 1;
-
-		while ( ( width >>= 1 ) > tileWidth && ( height >>= 1 ) > tileHeight )
-			++i;
-
-		return i;
 	}
 
 	@Override
@@ -119,7 +103,7 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 	{
 		return this;
 	}
-	
+
 	/**
 	 * (Almost) create a {@link CachedCellImg} backed by the cache.
 	 * The created image needs a {@link NativeImg#setLinkedType(net.imglib2.type.Type) linked type} before it can be used.
@@ -136,7 +120,7 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 
 		final int priority = dimensions.length - 1 - level;
 		final CacheHints cacheHints = new CacheHints( loadingStrategy, priority, false );
-		final CellCache< A > c = cache.new VolatileCellCache< A >( timepointId, setupId, level, cacheHints, loader );
+		final CellCache< A > c = cache.new VolatileCellCache< >( timepointId, setupId, level, cacheHints, loader );
 		final VolatileImgCells< A > cells = new VolatileImgCells<>( c, new Fraction(), levelDimensions, cellDimensions[ level ] );
 		final CachedCellImg< N, A > img = new CachedCellImg<>( cells );
 		return img;
@@ -158,10 +142,5 @@ abstract public class AbstractCellFileImageLoader< T extends NativeType< T >, V 
 	public int numMipmapLevels()
 	{
 		return dimensions.length;
-	}
-	
-	public void setCache( final VolatileGlobalCellCache cache )
-	{
-		this.cache = cache;
 	}
 }

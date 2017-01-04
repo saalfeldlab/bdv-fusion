@@ -13,20 +13,23 @@ public class CellFileImageLoaderFactory
 			return new CellFileUnsignedByteImageLoader(
 					metaData.getUrlFormat(),
 					metaData.getImageDimensions(),
-					metaData.getCellDimensions() );
+					metaData.getCellDimensions(),
+					metaData.getDownsampleFactors() );
 
 		case "GRAY16":
 			return new CellFileUnsignedShortImageLoader(
 					metaData.getUrlFormat(),
 					metaData.getImageDimensions(),
-					metaData.getCellDimensions() );
+					metaData.getCellDimensions(),
+					metaData.getDownsampleFactors() );
 
 		case "GRAY32":
 		default:
 			return new CellFileFloatImageLoader(
 					metaData.getUrlFormat(),
 					metaData.getImageDimensions(),
-					metaData.getCellDimensions() );
+					metaData.getCellDimensions(),
+					metaData.getDownsampleFactors() );
 		}
 	}
 }

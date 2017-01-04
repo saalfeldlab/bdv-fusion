@@ -33,9 +33,9 @@ public class CellFileImageMetaData
 {
 	private String urlFormat = "";
 	private String imageType = "";
-	private int numScales = 0;
-	private Map< Integer, long[] > levelImageDimensions = new TreeMap<>();
-	private Map< Integer, int[] > levelCellDimensions = new TreeMap<>();
+	private long[] imageDimensions = new long[ 3 ];
+	private Map< Integer, int[] > downsampleFactors = new TreeMap<>();
+	private Map< Integer, int[] > cellDimensions = new TreeMap<>();
 
 	private double[][] transform = new double[][] {
 		new double[] { 1, 0, 0, 0 },
@@ -45,7 +45,7 @@ public class CellFileImageMetaData
 
 	private double displayRangeMin = 0, displayRangeMax = 0xffff;
 
-	private double[] voxelDimensions = new double[]{ 1, 1, 1 };
+	private double[] voxelDimensions = new double[] { 1, 1, 1 };
 	private String voxelUnit = "nm";
 
 
@@ -69,18 +69,27 @@ public class CellFileImageMetaData
 
 	public long[][] getImageDimensions()
 	{
-		final long[][] imageDimensions = new long[ numScales ][];
-		for ( final Entry< Integer, long[] > entry : levelImageDimensions.entrySet() )
-			imageDimensions[ entry.getKey() ] = entry.getValue();
-		return imageDimensions;
+		final long[][] ret = new long[ downsampleFactors.size() ][ 3 ];
+		for ( final Entry< Integer, int[] > entry : downsampleFactors.entrySet() )
+			for ( int d = 0; d < entry.getValue().length; d++ )
+				ret[ entry.getKey() ][ d ] = imageDimensions[ d ] / entry.getValue()[ d ];
+		return ret;
+	}
+
+	public int[][] getDownsampleFactors()
+	{
+		final int[][] ret = new int[ downsampleFactors.size() ][];
+		for ( final Entry< Integer, int[] > entry : downsampleFactors.entrySet() )
+			ret[ entry.getKey() ] = entry.getValue();
+		return ret;
 	}
 
 	public int[][] getCellDimensions()
 	{
-		final int[][] cellDimensions = new int[ numScales ][];
-		for ( final Entry< Integer, int[] > entry : levelCellDimensions.entrySet() )
-			cellDimensions[ entry.getKey() ] = entry.getValue();
-		return cellDimensions;
+		final int[][] ret = new int[ cellDimensions.size() ][];
+		for ( final Entry< Integer, int[] > entry : cellDimensions.entrySet() )
+			ret[ entry.getKey() ] = entry.getValue();
+		return ret;
 	}
 
 	public VoxelDimensions getVoxelDimensions()
