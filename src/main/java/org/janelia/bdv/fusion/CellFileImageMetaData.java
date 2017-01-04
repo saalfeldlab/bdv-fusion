@@ -49,6 +49,30 @@ public class CellFileImageMetaData
 	private String voxelUnit = "nm";
 
 
+	public CellFileImageMetaData(
+			final String urlFormat,
+			final String imageType,
+			final long[] imageDimensions,
+			final Map< Integer, int[] > downsampleFactors,
+			final Map< Integer, int[] > cellDimensions,
+			final double[][] transform,
+			final VoxelDimensions voxel )
+	{
+		this.urlFormat = urlFormat;
+		this.imageType = imageType;
+		this.imageDimensions = imageDimensions;
+		this.downsampleFactors = downsampleFactors;
+		this.cellDimensions = cellDimensions;
+		this.transform = transform;
+
+		voxel.dimensions( this.voxelDimensions );
+		this.voxelUnit = voxel.unit();
+	}
+
+	protected CellFileImageMetaData()
+	{
+	}
+
 	public String getUrlFormat()
 	{
 		return urlFormat;
