@@ -99,14 +99,12 @@ public class CellFileImageMetaData
 
 	public AffineTransform3D getTransform()
 	{
-		final double[][] voxelTransform = new double[][] {
-				transform[ 0 ].clone(),
-				transform[ 1 ].clone(),
-				transform[ 2 ].clone()
-		};
-
-		voxelTransform[ 1 ][ 1 ] *= voxelDimensions[ 1 ] / voxelDimensions[ 0 ];
-		voxelTransform[ 2 ][ 2 ] *= voxelDimensions[ 2 ] / voxelDimensions[ 0 ];
+		final double[][] voxelTransform = new double[ transform.length ][];
+		for ( int d = 0; d < voxelTransform.length; d++ )
+		{
+			voxelTransform[ d ] = transform[ d ].clone();
+			voxelTransform[ d ][ d ] *= voxelDimensions[ d ];
+		}
 
 		final AffineTransform3D ret = new AffineTransform3D();
 		ret.set( voxelTransform );
