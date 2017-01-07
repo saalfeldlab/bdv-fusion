@@ -1,5 +1,8 @@
 package org.janelia.bdv.fusion;
 
+import static bdv.img.hdf5.Util.reorder;
+
+import java.io.File;
 import java.io.IOException;
 
 import bdv.ViewerSetupImgLoader;
@@ -10,7 +13,12 @@ import bdv.img.cache.CachedCellImg;
 import bdv.img.cache.VolatileImgCells;
 import bdv.img.cache.VolatileImgCells.CellCache;
 import bdv.img.h5.AbstractH5SetupImageLoader;
+import ch.systemsx.cisd.base.mdarray.MDLongArray;
+import ch.systemsx.cisd.hdf5.HDF5Factory;
+import ch.systemsx.cisd.hdf5.HDF5IntStorageFeatures;
+import ch.systemsx.cisd.hdf5.IHDF5LongWriter;
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
+import ch.systemsx.cisd.hdf5.IHDF5Writer;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileLongArray;
@@ -18,6 +26,7 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.array.LongArrayType;
 import net.imglib2.type.numeric.array.VolatileLongArrayType;
 import net.imglib2.util.Fraction;
+import net.imglib2.view.Views;
 
 /**
  * {@link ViewerSetupImgLoader} for 3D volumes of LongArrayType stored as
@@ -67,6 +76,7 @@ public class H5LongArraySetupImageLoader
 		arrayLength = ( int )h5dim[ 3 ];
 	}
 
+	@Override
 	protected < S extends NativeType< S > > CachedCellImg< S, VolatileLongArray > prepareCachedImage(
 			final int timepointId,
 			final int setupId,
@@ -103,5 +113,117 @@ public class H5LongArraySetupImageLoader
 	public CacheControl getCacheControl()
 	{
 		return cache;
+	}
+
+	private void cropCellDimensions(
+			final long[] offset,
+			final long[] croppedCellDimensions )
+	{
+		for ( int d = 0; d < offset.length; ++d )
+			croppedCellDimensions[ d ] = Math.min( blockDimension[ d ], dimension[ d ] - offset[ d ] );
+	}
+
+	/**
+	 * Create an int64 dataset.
+	 *
+	 * @param writer
+	 * @param dataset
+	 */
+	public void createDataset(
+			final IHDF5Writer writer,
+			final String dataset )
+	{
+		final IHDF5LongWriter int64Writer = writer.int64();
+
+		if ( writer.exists( dataset ) )
+			writer.delete( dataset );
+
+		int64Writer.createMDArray(
+				dataset,
+				new long[]{ dimension[ 2 ], dimension[ 1 ], dimension[ 0 ], arrayLength },
+				new int[]{ blockDimension[ 2 ], blockDimension[ 1 ], blockDimension[ 0 ], arrayLength },
+				HDF5IntStorageFeatures.INT_AUTO_SCALING_DEFLATE );
+	}
+
+
+	/**
+	 * Save as an int64 dataset.
+	 *
+	 * @param writer
+	 * @param dataset
+	 */
+	public void save(
+			final IHDF5Writer writer,
+			final String dataset )
+	{
+		if ( !writer.exists( dataset ) )
+			createDataset( writer, dataset );
+
+		final long[] h5Dimensions = reorder( dimension );
+		final int n = dimension.length;
+
+		final IHDF5LongWriter int64Writer = writer.int64();
+
+		final RandomAccessibleInterval< LongArrayType > img = getImage( 0 );
+
+		final long[] offset = new long[ n ];
+		final long[] offsetPlus = new long[ n + 1 ];
+		final long[] sourceCellDimensions = new long[ n ];
+		final long[] sourceCellDimensionsPlus = new long[ n + 1 ];
+		sourceCellDimensionsPlus[ n ] = arrayLength;
+		for ( int d = 0; d < n; )
+		{
+			cropCellDimensions( offset, sourceCellDimensions );
+			final RandomAccessibleInterval< LongArrayType > sourceBlock = Views.offsetInterval( img, offset, sourceCellDimensions );
+
+			System.arraycopy( reorder( sourceCellDimensions ), 0, sourceCellDimensionsPlus, 0, n );
+			final MDLongArray targetCell = new MDLongArray( sourceCellDimensionsPlus );
+
+			int i = 0;
+			for ( final LongArrayType t : Views.flatIterable( sourceBlock ) )
+				for ( int k = 0; k < arrayLength; ++k, ++i )
+					targetCell.set( t.get( k ), i );
+
+			int64Writer.writeMDArrayBlockWithOffset( dataset, targetCell, offsetPlus );
+
+			for ( d = 0; d < n; ++d )
+			{
+				offset[ d ] += blockDimension[ d ];
+				if ( offset[ d ] < dimension[ d ] )
+					break;
+				else
+					offset[ d ] = 0;
+			}
+
+			System.arraycopy( reorder( offset ), 0, offsetPlus, 0, n );
+		}
+	}
+
+	/**
+	 * Save as an int64 dataset.
+	 *
+	 * @param file
+	 * @param dataset
+	 */
+	public void save(
+			final File file,
+			final String dataset )
+	{
+		final IHDF5Writer writer = HDF5Factory.open( file );
+		save( writer, dataset );
+		writer.close();
+	}
+
+	/**
+	 * Save as an int64 dataset.
+	 *
+	 * @param filePath
+	 * @param dataset
+	 */
+	public void save(
+			final String filePath,
+			final String dataset )
+	{
+		save( new File( filePath ), dataset );
 	}
 }

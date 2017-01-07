@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import bdv.img.h5.H5Utils;
 import ch.systemsx.cisd.hdf5.HDF5Factory;
+import ch.systemsx.cisd.hdf5.IHDF5Writer;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
@@ -92,21 +93,37 @@ public class H5LongArraySetupImageLoaderTest
 	@Test
 	public void testH5LongArraySetupImageLoader() throws IOException
 	{
+		final IHDF5Writer writer = HDF5Factory.open( testDirPath + testH5Name );
 		final H5LongArraySetupImageLoader loader = new H5LongArraySetupImageLoader(
-				HDF5Factory.openForReading( testDirPath + testH5Name ),
+				writer,
 				"/test",
 				0,
 				new int[]{ 8, 8, 8 } );
 
 		final RandomAccessibleInterval< LongArrayType > img = loader.getImage( 0 );
+
 		System.out.println( Arrays.toString( Intervals.dimensionsAsLongArray( img ) ) );
 		int k = 0;
 		for ( final LongArrayType t : Views.flatIterable( img ) )
 			for ( int i = 0; i < t.size(); ++i, ++k )
 				Assert.assertEquals( testArray[ k ], t.get( i ) );
 
+		System.out.println( "Re-saving..." );
+		loader.save( writer, "/save" );
+
+		final H5LongArraySetupImageLoader loader2 = new H5LongArraySetupImageLoader(
+				writer,
+				"/save",
+				0,
+				new int[]{ 8, 8, 8 } );
+
+		final RandomAccessibleInterval< LongArrayType > img2 = loader2.getImage( 0 );
+
+		System.out.println( Arrays.toString( Intervals.dimensionsAsLongArray( img2 ) ) );
+		k = 0;
+		for ( final LongArrayType t : Views.flatIterable( img2 ) )
+			for ( int i = 0; i < t.size(); ++i, ++k )
+				Assert.assertEquals( testArray[ k ], t.get( i ) );
+
 	}
-
-
-
 }
