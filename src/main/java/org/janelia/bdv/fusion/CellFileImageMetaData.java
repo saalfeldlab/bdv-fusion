@@ -16,12 +16,16 @@
  */
 package org.janelia.bdv.fusion;
 
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
 
 /**
- * 
+ *
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  */
@@ -29,10 +33,10 @@ public class CellFileImageMetaData
 {
 	private String urlFormat = "";
 	private String imageType = "";
-	private int numScales = 0;
 	private long[] imageDimensions = new long[ 3 ];
-	private int[] cellDimensions = new int[ 3 ];
-	
+	private Map< Integer, int[] > downsampleFactors = new TreeMap<>();
+	private Map< Integer, int[] > cellDimensions = new TreeMap<>();
+
 	private double[][] transform = new double[][] {
 		new double[] { 1, 0, 0, 0 },
 		new double[] { 0, 1, 0, 0 },
@@ -40,11 +44,35 @@ public class CellFileImageMetaData
 	};
 
 	private double displayRangeMin = 0, displayRangeMax = 0xffff;
-	
-	private double[] voxelDimensions = new double[]{ 1, 1, 1 };
+
+	private double[] voxelDimensions = new double[] { 1, 1, 1 };
 	private String voxelUnit = "nm";
-	
-	
+
+
+	public CellFileImageMetaData(
+			final String urlFormat,
+			final String imageType,
+			final long[] imageDimensions,
+			final Map< Integer, int[] > downsampleFactors,
+			final Map< Integer, int[] > cellDimensions,
+			final double[][] transform,
+			final VoxelDimensions voxel )
+	{
+		this.urlFormat = urlFormat;
+		this.imageType = imageType;
+		this.imageDimensions = imageDimensions;
+		this.downsampleFactors = downsampleFactors;
+		this.cellDimensions = cellDimensions;
+		this.transform = transform;
+
+		voxel.dimensions( this.voxelDimensions );
+		this.voxelUnit = voxel.unit();
+	}
+
+	protected CellFileImageMetaData()
+	{
+	}
+
 	public String getUrlFormat()
 	{
 		return urlFormat;
@@ -53,7 +81,7 @@ public class CellFileImageMetaData
 	{
 		return imageType;
 	}
-	
+
 	public double getDisplayRangeMin()
 	{
 		return displayRangeMin;
@@ -62,42 +90,46 @@ public class CellFileImageMetaData
 	{
 		return displayRangeMax;
 	}
-	
-	public long[][] getDimensions()
+
+	public long[][] getImageDimensions()
 	{
-		final long[][] dimensions = new long[ numScales ][ imageDimensions.length ];
-		for ( int i = 0; i < numScales; ++i )
-			for ( int d = 0; d < imageDimensions.length; ++d )
-				dimensions[ i ][ d ] = imageDimensions[ d ] >> i;
-		
-		return dimensions; 
+		final long[][] ret = new long[ downsampleFactors.size() ][ 3 ];
+		for ( final Entry< Integer, int[] > entry : downsampleFactors.entrySet() )
+			for ( int d = 0; d < entry.getValue().length; d++ )
+				ret[ entry.getKey() ][ d ] = imageDimensions[ d ] / entry.getValue()[ d ];
+		return ret;
 	}
-	
+
+	public int[][] getDownsampleFactors()
+	{
+		final int[][] ret = new int[ downsampleFactors.size() ][];
+		for ( final Entry< Integer, int[] > entry : downsampleFactors.entrySet() )
+			ret[ entry.getKey() ] = entry.getValue();
+		return ret;
+	}
+
 	public int[][] getCellDimensions()
 	{
-		final int[][] levelCellDimensions = new int[ numScales ][ cellDimensions.length ];
-		for ( int i = 0; i < numScales; ++i )
-			levelCellDimensions[ i ] = cellDimensions;
-		
-		return levelCellDimensions; 
+		final int[][] ret = new int[ cellDimensions.size() ][];
+		for ( final Entry< Integer, int[] > entry : cellDimensions.entrySet() )
+			ret[ entry.getKey() ] = entry.getValue();
+		return ret;
 	}
 
 	public VoxelDimensions getVoxelDimensions()
 	{
 		return new FinalVoxelDimensions( voxelUnit, voxelDimensions );
 	}
-	
+
 	public AffineTransform3D getTransform()
 	{
-		final double[][] voxelTransform = new double[][] {
-				transform[ 0 ].clone(),
-				transform[ 1 ].clone(),
-				transform[ 2 ].clone()
-		};
-		
-		voxelTransform[ 1 ][ 1 ] *= voxelDimensions[ 1 ] / voxelDimensions[ 0 ];
-		voxelTransform[ 2 ][ 2 ] *= voxelDimensions[ 2 ] / voxelDimensions[ 0 ];
-		
+		final double[][] voxelTransform = new double[ transform.length ][];
+		for ( int d = 0; d < voxelTransform.length; d++ )
+		{
+			voxelTransform[ d ] = transform[ d ].clone();
+			voxelTransform[ d ][ d ] *= voxelDimensions[ d ];
+		}
+
 		final AffineTransform3D ret = new AffineTransform3D();
 		ret.set( voxelTransform );
 		return ret;

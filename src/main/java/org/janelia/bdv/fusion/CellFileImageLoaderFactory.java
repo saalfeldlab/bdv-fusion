@@ -7,26 +7,29 @@ public class CellFileImageLoaderFactory
 {
 	public static AbstractCellFileImageLoader< ? extends NativeType< ? >, ? extends Volatile< ? > > createImageLoader( final CellFileImageMetaData metaData )
 	{
-		switch ( metaData.getImageType() ) 
+		switch ( metaData.getImageType() )
 		{
 		case "GRAY8":
-			return new CellFileUnsignedByteImageLoader( 
-					metaData.getUrlFormat(), 
-					metaData.getDimensions(), 
-					metaData.getCellDimensions() );
-			
+			return new CellFileUnsignedByteImageLoader(
+					metaData.getUrlFormat(),
+					metaData.getImageDimensions(),
+					metaData.getCellDimensions(),
+					metaData.getDownsampleFactors() );
+
 		case "GRAY16":
-			return new CellFileUnsignedShortImageLoader( 
-					metaData.getUrlFormat(), 
-					metaData.getDimensions(), 
-					metaData.getCellDimensions() );
-			
+			return new CellFileUnsignedShortImageLoader(
+					metaData.getUrlFormat(),
+					metaData.getImageDimensions(),
+					metaData.getCellDimensions(),
+					metaData.getDownsampleFactors() );
+
 		case "GRAY32":
 		default:
-			return new CellFileFloatImageLoader( 
-					metaData.getUrlFormat(), 
-					metaData.getDimensions(), 
-					metaData.getCellDimensions() );
+			return new CellFileFloatImageLoader(
+					metaData.getUrlFormat(),
+					metaData.getImageDimensions(),
+					metaData.getCellDimensions(),
+					metaData.getDownsampleFactors() );
 		}
 	}
 }

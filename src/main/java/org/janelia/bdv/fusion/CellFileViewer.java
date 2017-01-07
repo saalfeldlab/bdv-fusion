@@ -16,18 +16,12 @@ import com.google.gson.JsonSyntaxException;
 
 import bdv.BigDataViewer;
 import bdv.bigcat.CombinedImgLoader;
-import bdv.bigcat.composite.ARGBCompositeAlphaAdd;
-import bdv.bigcat.composite.Composite;
-import bdv.bigcat.composite.CompositeCopy;
-import bdv.bigcat.composite.CompositeProjector;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.tools.brightness.ConverterSetup;
 import bdv.viewer.DisplayMode;
-import bdv.viewer.Source;
 import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
-import bdv.viewer.render.AccumulateProjectorFactory;
 import fiji.util.gui.GenericDialogPlus;
 import ij.plugin.PlugIn;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
@@ -53,12 +47,13 @@ import net.imglib2.type.numeric.ARGBType;
 public class CellFileViewer implements PlugIn
 {
 	protected static String jsonPath = "";
-	
-	final public static void main( String... args )
+
+	final public static void main( final String... args )
 	{
 		exec( args[ 0 ] );
 	}
-	
+
+	@Override
 	public void run( final String args )
 	{
 		final GenericDialogPlus gd = new GenericDialogPlus( "Cell File Viewer" );
@@ -66,16 +61,16 @@ public class CellFileViewer implements PlugIn
 		gd.showDialog();
 		if ( gd.wasCanceled() )
 			return;
-		
+
 		jsonPath = gd.getNextString();
-		
+
 		exec( jsonPath );
-	}	
-	
+	}
+
 	final public static void exec( final String jsonPath )
 	{
 		final Gson gson = new Gson();
-		
+
 		final CellFileImageMetaData[] metaDatas;
 		try
 		{
@@ -148,7 +143,7 @@ public class CellFileViewer implements PlugIn
 		for ( final ConverterSetup converterSetup : converterSetups )
 		{
 			final int i = converterSetup.getSetupId();
-			
+
 			if ( converterSetups.size() > 1 )
 			{
 				if ( i < predefinedColors.length )
@@ -158,26 +153,17 @@ public class CellFileViewer implements PlugIn
 			}
 		}
 
-		// Set up composites
-		final HashMap< Source< ? >, Composite< ARGBType, ARGBType > > sourceCompositesMap = new HashMap< >();
-		sourceCompositesMap.put( sources.get( 0 ).getSpimSource(), new CompositeCopy<>() );
-		for ( int i = 1; i < sources.size(); ++i )
-			sourceCompositesMap.put( sources.get( i ).getSpimSource(), new ARGBCompositeAlphaAdd() );
-
-		final AccumulateProjectorFactory< ARGBType > projectorFactory = new CompositeProjector.CompositeProjectorFactory< >( sourceCompositesMap );
-
 		final ViewerOptions options = ViewerOptions.options()
-				.accumulateProjectorFactory( projectorFactory )
 				.numRenderingThreads( 16 )
 				.targetRenderNanos( 10000000 );
 
-		final BigDataViewer bdv = new BigDataViewer( 
-				converterSetups, 
-				sources, 
+		final BigDataViewer bdv = new BigDataViewer(
+				converterSetups,
+				sources,
 				null,
-				timepoints.size(), 
-				combinedImgLoader.getCacheControl(), 
-				windowTitle, 
+				timepoints.size(),
+				combinedImgLoader.getCacheControl(),
+				windowTitle,
 				null,
 				options );
 
@@ -189,7 +175,7 @@ public class CellFileViewer implements PlugIn
 			converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
 			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
 		}
-		
+
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
 
 		return bdv;
