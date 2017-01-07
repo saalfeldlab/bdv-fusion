@@ -94,6 +94,11 @@ public class VolatileIntArrayType extends AbstractVolatileNativeNumericType< Int
 		this( new int[ length ] );
 	}
 
+	public int size()
+	{
+		return t.size();
+	}
+
 	public void set( final int value, final int index )
 	{
 		get().set( value, index );

@@ -94,6 +94,11 @@ public class VolatileFloatArrayType extends AbstractVolatileNativeNumericType< F
 		this( new float[ length ] );
 	}
 
+	public int size()
+	{
+		return t.size();
+	}
+
 	public void set( final float value, final int index )
 	{
 		get().set( value, index );

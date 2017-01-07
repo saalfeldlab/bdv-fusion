@@ -70,6 +70,11 @@ abstract public class AbstractArrayType< T extends AbstractArrayType< T, A >, A 
 		this.length = length;
 	}
 
+	public int size()
+	{
+		return length;
+	}
+
 	@Override
 	public Fraction getEntitiesPerPixel()
 	{
@@ -83,9 +88,10 @@ abstract public class AbstractArrayType< T extends AbstractArrayType< T, A >, A 
 	}
 
 	@Override
-	public void updateIndex( int i )
+	public void updateIndex( final int i )
 	{
-		i = i * length;
+		this.i = i * length;
+		index = i;
 	}
 
 	@Override
@@ -102,7 +108,7 @@ abstract public class AbstractArrayType< T extends AbstractArrayType< T, A >, A 
 	}
 
 	@Override
-	public void incIndex( int increment )
+	public void incIndex( final int increment )
 	{
 		i += increment * length;
 		index += increment;
@@ -116,7 +122,7 @@ abstract public class AbstractArrayType< T extends AbstractArrayType< T, A >, A 
 	}
 
 	@Override
-	public void decIndex( int decrement )
+	public void decIndex( final int decrement )
 	{
 		i -= decrement * length;
 		index -= decrement;

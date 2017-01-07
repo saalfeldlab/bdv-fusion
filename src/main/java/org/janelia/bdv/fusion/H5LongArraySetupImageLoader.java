@@ -2,23 +2,18 @@ package org.janelia.bdv.fusion;
 
 import java.io.IOException;
 
-import bdv.AbstractViewerSetupImgLoader;
-import bdv.ViewerImgLoader;
 import bdv.ViewerSetupImgLoader;
 import bdv.cache.CacheControl;
 import bdv.cache.CacheHints;
 import bdv.cache.LoadingStrategy;
-import bdv.img.SetCache;
-import bdv.img.cache.CacheArrayLoader;
 import bdv.img.cache.CachedCellImg;
-import bdv.img.cache.VolatileGlobalCellCache;
 import bdv.img.cache.VolatileImgCells;
 import bdv.img.cache.VolatileImgCells.CellCache;
+import bdv.img.h5.AbstractH5SetupImageLoader;
 import ch.systemsx.cisd.hdf5.IHDF5Reader;
 import mpicbg.spim.data.generic.sequence.ImgLoaderHint;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.img.basictypeaccess.volatiles.array.VolatileLongArray;
-import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.array.LongArrayType;
 import net.imglib2.type.numeric.array.VolatileLongArrayType;
@@ -32,38 +27,9 @@ import net.imglib2.util.Fraction;
  * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
  */
 public class H5LongArraySetupImageLoader
-	extends AbstractViewerSetupImgLoader< LongArrayType, VolatileLongArrayType >
-	implements ViewerImgLoader, SetCache
+	extends AbstractH5SetupImageLoader< LongArrayType, VolatileLongArrayType, VolatileLongArray >
 {
-	final protected double[] resolution;
-
-	final protected long[] dimension;
-
-	final protected int[] blockDimension;
-
 	final protected int arrayLength;
-
-	final protected AffineTransform3D mipmapTransform;
-
-	protected VolatileGlobalCellCache cache;
-
-	final protected CacheArrayLoader< VolatileLongArray > loader;
-
-	final protected int setupId;
-
-	final static protected double[] readResolution( final IHDF5Reader reader, final String dataset )
-	{
-		final double[] resolution;
-		if ( reader.object().hasAttribute( dataset, "resolution" ) )
-		{
-			final double[] h5res = reader.float64().getArrayAttr( dataset, "resolution" );
-			resolution = new double[] { h5res[ 2 ], h5res[ 1 ], h5res[ 0 ], };
-		}
-		else
-			resolution = new double[] { 1, 1, 1 };
-
-		return resolution;
-	}
 
 	private static final LongArrayType createLongArrayType(
 			final IHDF5Reader reader,
@@ -88,50 +54,22 @@ public class H5LongArraySetupImageLoader
 			final int[] blockDimension ) throws IOException
 	{
 		super(
+				reader,
+				dataset,
+				setupId,
+				blockDimension,
 				createLongArrayType( reader, dataset ),
-				createVolatileLongArrayType( reader, dataset ) );
-
-		this.setupId = setupId;
-
-		this.resolution = readResolution( reader, dataset );
+				createVolatileLongArrayType( reader, dataset ),
+				new H5LongArrayArrayLoader( reader, dataset ) );
 
 		final long[] h5dim = reader.object().getDimensions( dataset );
 
-		dimension = new long[]{
-				h5dim[ 2 ],
-				h5dim[ 1 ],
-				h5dim[ 0 ] };
-
 		arrayLength = ( int )h5dim[ 3 ];
-
-		mipmapTransform = new AffineTransform3D();
-
-		mipmapTransform.set( resolution[ 0 ], 0, 0 );
-		mipmapTransform.set( resolution[ 1 ], 1, 1 );
-		mipmapTransform.set( resolution[ 2 ], 2, 2 );
-
-		this.blockDimension = blockDimension;
-
-		this.loader = new H5LongArrayArrayLoader( reader, dataset );
-
-		cache = new VolatileGlobalCellCache( 1, 10 );
-	}
-
-	@Override
-	public double[][] getMipmapResolutions()
-	{
-		return new double[][]{ resolution };
-	}
-
-	@Override
-	public int numMipmapLevels()
-	{
-		return 1;
 	}
 
 	protected < S extends NativeType< S > > CachedCellImg< S, VolatileLongArray > prepareCachedImage(
 			final int timepointId,
-			@SuppressWarnings( "hiding" ) final int setupId,
+			final int setupId,
 			final int level,
 			final LoadingStrategy loadingStrategy )
 	{
@@ -141,24 +79,6 @@ public class H5LongArraySetupImageLoader
 		final VolatileImgCells< VolatileLongArray > cells = new VolatileImgCells< VolatileLongArray >( c, new Fraction(), dimension, blockDimension );
 		final CachedCellImg< S, VolatileLongArray > img = new CachedCellImg< S, VolatileLongArray >( cells );
 		return img;
-	}
-
-	@Override
-	public AffineTransform3D[] getMipmapTransforms()
-	{
-		return new AffineTransform3D[]{ mipmapTransform };
-	}
-
-	@Override
-	public void setCache( final VolatileGlobalCellCache cache )
-	{
-		this.cache = cache;
-	}
-
-	@Override
-	public ViewerSetupImgLoader< ?, ? > getSetupImgLoader( final int setupId )
-	{
-		return this;
 	}
 
 	@Override

@@ -48,8 +48,6 @@ import net.imglib2.util.Fraction;
  */
 public class LongArrayType extends AbstractArrayType< LongArrayType, LongAccess > implements NumericType< LongArrayType >
 {
-	protected LongAccess dataAccess;
-
 	// this is the constructor if you want it to read from an array
 	public LongArrayType( final NativeImg< ?, ? extends LongAccess > longArrayStorage, final int length )
 	{

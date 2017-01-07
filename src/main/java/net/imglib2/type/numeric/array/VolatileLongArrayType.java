@@ -94,6 +94,11 @@ public class VolatileLongArrayType extends AbstractVolatileNativeNumericType< Lo
 		this( new long[ length ] );
 	}
 
+	public int size()
+	{
+		return t.size();
+	}
+
 	public void set( final long value, final int index )
 	{
 		get().set( value, index );

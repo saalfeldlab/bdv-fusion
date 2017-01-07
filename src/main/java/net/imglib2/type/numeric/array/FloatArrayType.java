@@ -48,8 +48,6 @@ import net.imglib2.util.Fraction;
  */
 public class FloatArrayType extends AbstractArrayType< FloatArrayType, FloatAccess > implements NumericType< FloatArrayType >
 {
-	protected FloatAccess dataAccess;
-
 	// this is the constructor if you want it to read from an array
 	public FloatArrayType( final NativeImg< ?, ? extends FloatAccess > floatArrayStorage, final int length )
 	{
