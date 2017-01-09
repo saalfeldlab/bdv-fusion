@@ -91,6 +91,11 @@ public class CellFileImageMetaData
 		return displayRangeMax;
 	}
 
+	public int getNumScales()
+	{
+		return downsampleFactors.size();
+	}
+
 	public long[][] getImageDimensions()
 	{
 		final long[][] ret = new long[ downsampleFactors.size() ][ 3 ];
