@@ -39,7 +39,7 @@ public class H5LongArraySetupImageLoaderTest
 
 	final static private int[] cellDimensions = new int[]{ 32, 8, 8, 8 };
 
-	final static private Random rnd = new Random( 0 );
+	final static private Random rnd = new Random();
 
 	final static private long[] testArray =
 			new long[ (int)(
