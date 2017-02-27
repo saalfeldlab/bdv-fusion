@@ -12,7 +12,7 @@ import net.imglib2.img.basictypeaccess.volatiles.array.VolatileLongArray;
  * {@link CacheArrayLoader} for
  * Jan Funke's and other's h5 files
  *
- * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
+ * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  */
 public class H5LongArrayArrayLoader implements CacheArrayLoader< VolatileLongArray >
 {

@@ -33,7 +33,7 @@ import net.imglib2.view.Views;
  * 4D volumes (first/ slowest running dimension is the length of the array)
  * stored in HDF5 files.
  *
- * @author Stephan Saalfeld <saalfelds@janelia.hhmi.org>
+ * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
  */
 public class H5LongArraySetupImageLoader
 	extends AbstractH5SetupImageLoader< LongArrayType, VolatileLongArrayType, VolatileLongArray >
