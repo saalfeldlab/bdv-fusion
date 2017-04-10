@@ -46,7 +46,7 @@ public class CellFileImageMetaData
 	private double displayRangeMin = 0, displayRangeMax = 0xffff;
 
 	private double[] voxelDimensions = new double[] { 1, 1, 1 };
-	private String voxelUnit = "nm";
+	private String voxelUnit = "um";
 
 
 	public CellFileImageMetaData(
@@ -128,15 +128,28 @@ public class CellFileImageMetaData
 
 	public AffineTransform3D getTransform()
 	{
+		final double[] normalizedVoxelDimensions = normalizeVoxelDimensions( getVoxelDimensions() );
 		final double[][] voxelTransform = new double[ transform.length ][];
 		for ( int d = 0; d < voxelTransform.length; d++ )
 		{
 			voxelTransform[ d ] = transform[ d ].clone();
-			voxelTransform[ d ][ d ] *= voxelDimensions[ d ];
+			voxelTransform[ d ][ d ] *= normalizedVoxelDimensions[ d ];
 		}
 
 		final AffineTransform3D ret = new AffineTransform3D();
 		ret.set( voxelTransform );
 		return ret;
+	}
+
+	// taken from stitching-spark Utils
+	private static double[] normalizeVoxelDimensions( final VoxelDimensions voxelDimensions )
+	{
+		final double[] normalizedVoxelDimensions = new double[ voxelDimensions.numDimensions() ];
+		double voxelDimensionsMinValue = Double.MAX_VALUE;
+		for ( int d = 0; d < normalizedVoxelDimensions.length; d++ )
+			voxelDimensionsMinValue = Math.min( voxelDimensions.dimension( d ), voxelDimensionsMinValue );
+		for ( int d = 0; d < normalizedVoxelDimensions.length; d++ )
+			normalizedVoxelDimensions[ d ] = voxelDimensions.dimension( d ) / voxelDimensionsMinValue;
+		return normalizedVoxelDimensions;
 	}
 }
