@@ -7,8 +7,12 @@ import java.io.FileReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import org.scijava.ui.behaviour.io.InputTriggerConfig;
+import org.scijava.ui.behaviour.util.TriggerBehaviourBindings;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
@@ -23,6 +27,7 @@ import bdv.viewer.DisplayMode;
 import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
 import fiji.util.gui.GenericDialogPlus;
+import ij.IJ;
 import ij.plugin.PlugIn;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
@@ -46,28 +51,28 @@ import net.imglib2.type.numeric.ARGBType;
 
 public class CellFileViewer implements PlugIn
 {
-	protected static String jsonPath = "";
-
 	final public static void main( final String... args )
 	{
-		exec( args[ 0 ] );
+		exec( args[ 0 ], args.length > 1 ? args[ 1 ] : "" );
 	}
 
 	@Override
 	public void run( final String args )
 	{
 		final GenericDialogPlus gd = new GenericDialogPlus( "Cell File Viewer" );
-		gd.addFileField( "JSON_File: ", jsonPath);
+		gd.addFileField( "JSON_File: ", "" );
+		gd.addFileField( "(Optional) Tiles pairwise configuration: ", "" );
 		gd.showDialog();
 		if ( gd.wasCanceled() )
 			return;
 
-		jsonPath = gd.getNextString();
+		final String jsonPath = gd.getNextString();
+		final String tilesPairwiseConfigPath = gd.getNextString();
 
-		exec( jsonPath );
+		exec( jsonPath, tilesPairwiseConfigPath );
 	}
 
-	final public static void exec( final String jsonPath )
+	final public static void exec( final String jsonPath, final String tilesPairwiseConfigPath )
 	{
 		final Gson gson = new Gson();
 
@@ -84,6 +89,8 @@ public class CellFileViewer implements PlugIn
 
 		final BigDataViewer bdv = createViewer( Paths.get( jsonPath ).getFileName() + " - Cell File Viewer", metaDatas );
 		bdv.getViewerFrame().setVisible( true );
+
+		addCustomBehaviours( bdv, tilesPairwiseConfigPath );
 	}
 
 	private static BigDataViewer createViewer(
@@ -179,5 +186,25 @@ public class CellFileViewer implements PlugIn
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
 
 		return bdv;
+	}
+
+	private static void addCustomBehaviours( final BigDataViewer bdv, final String tilesPairwiseConfigPath )
+	{
+		final InputTriggerConfig config = new InputTriggerConfig();
+		final List< CustomBehaviourController > controllers = new ArrayList<>();
+
+		// add more behaviour controllers here
+		if ( tilesPairwiseConfigPath != null && !tilesPairwiseConfigPath.isEmpty() )
+			controllers.add( new TilePairwiseDisplacementController( config, bdv.getViewer(), tilesPairwiseConfigPath ) );
+
+		final TriggerBehaviourBindings bindings = bdv.getViewerFrame().getTriggerbindings();
+		for ( final CustomBehaviourController controller : controllers )
+		{
+			bindings.addBehaviourMap( controller.getName(), controller.getBehaviourMap() );
+			bindings.addInputTriggerMap( controller.getName(), controller.getInputTriggerMap() );
+			IJ.log( "Added custom behaviour: " + controller.getName() );
+		}
+		if ( !controllers.isEmpty() )
+			IJ.log( "------------------" );
 	}
 }
