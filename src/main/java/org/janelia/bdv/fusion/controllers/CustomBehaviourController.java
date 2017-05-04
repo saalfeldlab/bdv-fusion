@@ -1,4 +1,4 @@
-package org.janelia.bdv.fusion;
+package org.janelia.bdv.fusion.controllers;
 
 import org.scijava.ui.behaviour.Behaviour;
 import org.scijava.ui.behaviour.BehaviourMap;

@@ -1,12 +1,10 @@
-package org.janelia.bdv.fusion;
+package org.janelia.bdv.fusion.controllers;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import org.janelia.stitching.SerializablePairWiseStitchingResult;
 import org.janelia.stitching.TileInfo;
-import org.janelia.stitching.TileInfoJSONProvider;
 import org.janelia.stitching.TileOperations;
 import org.janelia.stitching.TilePair;
 import org.janelia.stitching.Utils;
@@ -25,25 +23,10 @@ public class TilePairwiseDisplacementController extends CustomBehaviourControlle
 	private final Map< Integer, ? extends Map< Integer, SerializablePairWiseStitchingResult > > pairwiseShiftsMap;
 
 
-	public TilePairwiseDisplacementController( final InputTriggerConfig config, final ViewerPanel viewer, final String tilesPairwiseConfigPath )
+	public TilePairwiseDisplacementController( final InputTriggerConfig config, final ViewerPanel viewer, final List< SerializablePairWiseStitchingResult > pairwiseShifts )
 	{
 		super( config );
 		this.viewer = viewer;
-
-		final List< SerializablePairWiseStitchingResult > pairwiseShifts;
-		try
-		{
-			pairwiseShifts = TileInfoJSONProvider.loadPairwiseShifts( tilesPairwiseConfigPath );
-		}
-		catch ( final IOException e )
-		{
-			IJ.error( "Unable to load tiles pairwise configuration file: " + tilesPairwiseConfigPath );
-			e.printStackTrace();
-			tiles = null;
-			pairwiseShiftsMap = null;
-			return;
-		}
-
 		tiles = Utils.createTilesMap( pairwiseShifts, false ).values().toArray( new TileInfo[ 0 ] );
 		pairwiseShiftsMap = Utils.createPairwiseShiftsMap( pairwiseShifts, false );
 	}
@@ -60,10 +43,7 @@ public class TilePairwiseDisplacementController extends CustomBehaviourControlle
 		private TilePair lastTilePair;
 
 		@Override
-		public void init( final int x, final int y )
-		{
-			IJ.log( "[Tile pairwise displacement mode ON]" );
-		}
+		public void init( final int x, final int y ) { }
 
 		@Override
 		public void drag( final int x, final int y )
@@ -87,11 +67,13 @@ public class TilePairwiseDisplacementController extends CustomBehaviourControlle
 					for ( int d = 0; d < 3; ++d )
 						tileOffsetPosition[ d ] = tilePair.getA().getPosition( d ) + pairwiseShift.getOffset( d );
 					IJ.log(
-							String.format( "(%d,%d): displacement=%f%s",
+							String.format( "(%d,%d): displacement=%f, cross correlation=%f, variance=%f%s",
 									tilePair.getA().getIndex(),
 									tilePair.getB().getIndex(),
 									Point.distance( new Point( tilePair.getB().getPosition() ), new Point( tileOffsetPosition ) ),
-									pairwiseShift.getIsValidOverlap() ? "" : ", rejected" ) );
+									pairwiseShift.getCrossCorrelation(),
+									pairwiseShift.getVariance(),
+									pairwiseShift.getIsValidOverlap() ? "" : " [rejected]" ) );
 				}
 			}
 		}
@@ -100,7 +82,6 @@ public class TilePairwiseDisplacementController extends CustomBehaviourControlle
 		public void end( final int x, final int y )
 		{
 			lastTilePair = null;
-			IJ.log( "[Tile pairwise displacement mode OFF]" );
 		}
 	}
 }

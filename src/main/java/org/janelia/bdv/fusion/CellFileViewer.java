@@ -4,6 +4,7 @@ import static bdv.bigcat.CombinedImgLoader.SetupIdAndLoader.setupIdAndLoader;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +12,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.janelia.bdv.fusion.controllers.CustomBehaviourController;
+import org.janelia.bdv.fusion.controllers.TilePairwiseDisplacementController;
+import org.janelia.bdv.fusion.controllers.TilesAtPointController;
+import org.janelia.stitching.TileInfoJSONProvider;
 import org.scijava.ui.behaviour.io.InputTriggerConfig;
 import org.scijava.ui.behaviour.util.TriggerBehaviourBindings;
 
@@ -67,12 +72,12 @@ public class CellFileViewer implements PlugIn
 			return;
 
 		final String jsonPath = gd.getNextString();
-		final String tilesPairwiseConfigPath = gd.getNextString();
+		final String tilesConfigPath = gd.getNextString();
 
-		exec( jsonPath, tilesPairwiseConfigPath );
+		exec( jsonPath, tilesConfigPath );
 	}
 
-	final public static void exec( final String jsonPath, final String tilesPairwiseConfigPath )
+	final public static void exec( final String jsonPath, final String tilesConfigPath )
 	{
 		final Gson gson = new Gson();
 
@@ -90,7 +95,7 @@ public class CellFileViewer implements PlugIn
 		final BigDataViewer bdv = createViewer( Paths.get( jsonPath ).getFileName() + " - Cell File Viewer", metaDatas );
 		bdv.getViewerFrame().setVisible( true );
 
-		addCustomBehaviours( bdv, tilesPairwiseConfigPath );
+		addCustomBehaviours( bdv, tilesConfigPath );
 	}
 
 	private static BigDataViewer createViewer(
@@ -188,14 +193,37 @@ public class CellFileViewer implements PlugIn
 		return bdv;
 	}
 
-	private static void addCustomBehaviours( final BigDataViewer bdv, final String tilesPairwiseConfigPath )
+	private static void addCustomBehaviours( final BigDataViewer bdv, final String tilesConfigPath )
 	{
 		final InputTriggerConfig config = new InputTriggerConfig();
 		final List< CustomBehaviourController > controllers = new ArrayList<>();
 
-		// add more behaviour controllers here
-		if ( tilesPairwiseConfigPath != null && !tilesPairwiseConfigPath.isEmpty() )
-			controllers.add( new TilePairwiseDisplacementController( config, bdv.getViewer(), tilesPairwiseConfigPath ) );
+		if ( tilesConfigPath != null && !tilesConfigPath.isEmpty() )
+		{
+			if ( TileInfoJSONProvider.isTilesConfiguration( tilesConfigPath ) )
+			{
+				try
+				{
+					controllers.add( new TilesAtPointController( config, bdv.getViewer(), TileInfoJSONProvider.loadTilesConfiguration( tilesConfigPath ) ) );
+				}
+				catch ( final IOException e )
+				{
+					e.printStackTrace();
+				}
+			}
+
+			if ( TileInfoJSONProvider.isPairwiseConfiguration( tilesConfigPath ) )
+			{
+				try
+				{
+					controllers.add( new TilePairwiseDisplacementController( config, bdv.getViewer(), TileInfoJSONProvider.loadPairwiseShifts( tilesConfigPath ) ) );
+				}
+				catch ( final IOException e )
+				{
+					e.printStackTrace();
+				}
+			}
+		}
 
 		final TriggerBehaviourBindings bindings = bdv.getViewerFrame().getTriggerbindings();
 		for ( final CustomBehaviourController controller : controllers )
