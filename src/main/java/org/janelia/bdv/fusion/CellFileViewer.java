@@ -177,6 +177,7 @@ public class CellFileViewer implements PlugIn
 		}
 
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
+		bdv.getViewerFrame().setSize( 1248, 656 );
 
 		return bdv;
 	}
