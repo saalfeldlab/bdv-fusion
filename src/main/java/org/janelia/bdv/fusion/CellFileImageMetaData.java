@@ -23,11 +23,14 @@ import java.util.TreeMap;
 import mpicbg.spim.data.sequence.FinalVoxelDimensions;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.realtransform.InvertibleRealTransform;
+import net.imglib2.realtransform.io.SerializableTransform3D;
 
 /**
  *
  *
  * @author Stephan Saalfeld &lt;saalfelds@janelia.hhmi.org&gt;
+ * @author John Bogovic &lt;bogovicj@janelia.hhmi.org&gt;
  */
 public class CellFileImageMetaData
 {
@@ -43,11 +46,36 @@ public class CellFileImageMetaData
 		new double[] { 0, 0, 1, 0 }
 	};
 
+	// an arbitrary transformation applied after the affine 'transform'
+	private SerializableTransform3D postTransform;
+
 	private double displayRangeMin = 0, displayRangeMax = 0xffff;
 
 	private double[] voxelDimensions = new double[] { 1, 1, 1 };
 	private String voxelUnit = "nm";
 
+	public CellFileImageMetaData(
+			final String urlFormat,
+			final String imageType,
+			final long[] imageDimensions,
+			final Map< Integer, int[] > downsampleFactors,
+			final Map< Integer, int[] > cellDimensions,
+			final double[][] transform,
+			final InvertibleRealTransform postTransform,
+			final VoxelDimensions voxel )
+	{
+		this.urlFormat = urlFormat;
+		this.imageType = imageType;
+		this.imageDimensions = imageDimensions;
+		this.downsampleFactors = downsampleFactors;
+		this.cellDimensions = cellDimensions;
+
+		setPostTransform( postTransform );
+		this.transform = transform;
+
+		voxel.dimensions( this.voxelDimensions );
+		this.voxelUnit = voxel.unit();
+	}
 
 	public CellFileImageMetaData(
 			final String urlFormat,
@@ -58,15 +86,9 @@ public class CellFileImageMetaData
 			final double[][] transform,
 			final VoxelDimensions voxel )
 	{
-		this.urlFormat = urlFormat;
-		this.imageType = imageType;
-		this.imageDimensions = imageDimensions;
-		this.downsampleFactors = downsampleFactors;
-		this.cellDimensions = cellDimensions;
-		this.transform = transform;
-
-		voxel.dimensions( this.voxelDimensions );
-		this.voxelUnit = voxel.unit();
+		this( urlFormat, imageType, imageDimensions, 
+				downsampleFactors, cellDimensions, transform, 
+				null, voxel );
 	}
 
 	protected CellFileImageMetaData()
@@ -138,5 +160,18 @@ public class CellFileImageMetaData
 		final AffineTransform3D ret = new AffineTransform3D();
 		ret.set( voxelTransform );
 		return ret;
+	}
+
+	public InvertibleRealTransform getPostTransform()
+	{
+		if( postTransform == null )
+			return null;
+
+		return postTransform.getTransform();
+	}
+
+	public void setPostTransform( InvertibleRealTransform postTransform )
+	{
+		this.postTransform = new SerializableTransform3D( postTransform );
 	}
 }

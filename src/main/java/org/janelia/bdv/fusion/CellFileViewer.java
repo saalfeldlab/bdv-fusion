@@ -16,6 +16,7 @@ import com.google.gson.JsonSyntaxException;
 
 import bdv.BigDataViewer;
 import bdv.bigcat.CombinedImgLoader;
+import bdv.img.WarpedSource;
 import bdv.spimdata.SequenceDescriptionMinimal;
 import bdv.spimdata.SpimDataMinimal;
 import bdv.tools.brightness.ConverterSetup;
@@ -32,6 +33,7 @@ import mpicbg.spim.data.sequence.TimePoint;
 import mpicbg.spim.data.sequence.TimePoints;
 import mpicbg.spim.data.sequence.VoxelDimensions;
 import net.imglib2.realtransform.AffineTransform3D;
+import net.imglib2.realtransform.InverseRealTransform;
 import net.imglib2.type.numeric.ARGBType;
 
 /**
@@ -47,6 +49,15 @@ import net.imglib2.type.numeric.ARGBType;
 public class CellFileViewer implements PlugIn
 {
 	protected static String jsonPath = "";
+
+	static final int[] PREDEFINED_COLORS = new int[] {
+			ARGBType.rgba( 0xff, 0, 0xff, 0xff ),
+			ARGBType.rgba( 0, 0xff, 0, 0xff ),
+			ARGBType.rgba( 0, 0, 0xff, 0xff ),
+			ARGBType.rgba( 0xff, 0, 0, 0xff ),
+			ARGBType.rgba( 0xff, 0xff, 0, 0xff ),
+			ARGBType.rgba( 0, 0xff, 0xff, 0xff ),
+	};
 
 	final public static void main( final String... args )
 	{
@@ -126,18 +137,11 @@ public class CellFileViewer implements PlugIn
 		final SpimDataMinimal spimData = new SpimDataMinimal( null, seq, reg );
 
 		final ArrayList< ConverterSetup > converterSetups = new ArrayList< >();
-		final ArrayList< SourceAndConverter< ? > > sources = new ArrayList< >();
+		final ArrayList< SourceAndConverter< ? > > sourcesTmp = new ArrayList< >();
 
-		BigDataViewer.initSetups( spimData, converterSetups, sources );
+		BigDataViewer.initSetups( spimData, converterSetups, sourcesTmp );
+		ArrayList< SourceAndConverter< ? > > sources = addPostTransforms( metaDatas, sourcesTmp );
 
-		final int[] predefinedColors = new int[] {
-				ARGBType.rgba( 0xff, 0, 0xff, 0xff ),
-				ARGBType.rgba( 0, 0xff, 0, 0xff ),
-				ARGBType.rgba( 0, 0, 0xff, 0xff ),
-				ARGBType.rgba( 0xff, 0, 0, 0xff ),
-				ARGBType.rgba( 0xff, 0xff, 0, 0xff ),
-				ARGBType.rgba( 0, 0xff, 0xff, 0xff ),
-		};
 
 		final Random rnd = new Random();
 		for ( final ConverterSetup converterSetup : converterSetups )
@@ -146,8 +150,8 @@ public class CellFileViewer implements PlugIn
 
 			if ( converterSetups.size() > 1 )
 			{
-				if ( i < predefinedColors.length )
-					converterSetup.setColor( new ARGBType( predefinedColors[ i ] ) );
+				if ( i < PREDEFINED_COLORS.length )
+					converterSetup.setColor( new ARGBType( PREDEFINED_COLORS[ i ] ) );
 				else
 					converterSetup.setColor( new ARGBType( ARGBType.rgba( rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, rnd.nextInt( 1 << 7) << 1, 0xff ) ) );
 			}
@@ -180,5 +184,48 @@ public class CellFileViewer implements PlugIn
 		bdv.getViewerFrame().setSize( 1248, 656 );
 
 		return bdv;
+	}
+
+	public static ArrayList< SourceAndConverter< ? > > addPostTransforms( CellFileImageMetaData[] metalist, ArrayList< SourceAndConverter< ? > >  sources )
+	{
+		final ArrayList< SourceAndConverter< ? > > sourcesTransformed = new ArrayList< >();
+
+		for( int i = 0; i < sources.size(); i++ )
+		{
+			CellFileImageMetaData meta = metalist[ i ];
+			SourceAndConverter< ? > src = sources.get( i );
+
+			if( meta.getPostTransform() != null )
+			{
+				InverseRealTransform iXfm = new InverseRealTransform(  meta.getPostTransform() );
+				sourcesTransformed.add( wrapSourceAsTransformed( src, iXfm ));
+			}
+			else
+			{
+				sourcesTransformed.add ( src );
+			}
+		}
+
+		return sourcesTransformed;
+	}
+
+	public static < T > SourceAndConverter< T > wrapSourceAsTransformed( 
+			final SourceAndConverter< T > src,
+			InverseRealTransform irXfm )
+	{
+		String warpedName = src.getSpimSource().getName() + "_warped";
+		WarpedSource<T> warpedSource = new WarpedSource<T>( src.getSpimSource(), warpedName );
+		warpedSource.updateTransform( irXfm );
+		warpedSource.setIsTransformed( true );
+
+		if ( src.asVolatile() == null )
+		{
+			return new SourceAndConverter< T >( warpedSource, src.getConverter(), null );
+		}
+		else
+		{
+			return new SourceAndConverter< T >( warpedSource, src.getConverter(), 
+					wrapSourceAsTransformed( src.asVolatile(), irXfm ) );
+		}
 	}
 }
