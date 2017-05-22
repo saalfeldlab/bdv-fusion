@@ -172,7 +172,15 @@ public class CellFileViewer implements PlugIn
 		for ( final ConverterSetup converterSetup : converterSetups )
 		{
 			final int i = converterSetup.getSetupId();
-			converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
+			if ( ( int ) metaDatas[ i ].getDisplayRangeMin() == 0 && ( int ) metaDatas[ i ].getDisplayRangeMax() == 65535 )
+			{
+				final boolean isDeconExport = metaDatas[ i ].getUrlFormat().indexOf( "decon" ) != -1;
+				converterSetup.setDisplayRange( 0, isDeconExport ? 3000 : 300 );
+			}
+			else
+			{
+				converterSetup.setDisplayRange( metaDatas[ i ].getDisplayRangeMin(), metaDatas[ i ].getDisplayRangeMax() );
+			}
 			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
 		}
 
