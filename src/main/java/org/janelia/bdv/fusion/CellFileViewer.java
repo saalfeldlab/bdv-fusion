@@ -176,6 +176,31 @@ public class CellFileViewer implements PlugIn
 			bdv.getSetupAssignments().removeSetupFromGroup( converterSetup, bdv.getSetupAssignments().getMinMaxGroups().get( 0 ) );
 		}
 
+		// put the camera in the middle of the sample at a scale that captures the entire volume
+		final long[] imageSize = metaDatas[ 0 ].getImageDimensions()[ 0 ];
+		final int[] viewerFrameSize = new int[] { bdv.getViewer().getWidth(), bdv.getViewer().getHeight() };
+
+		// translation to the middle
+		final double[] normalizedVoxelDimensions = CellFileImageMetaData.normalizeVoxelDimensions( metaDatas[ 0 ].getVoxelDimensions() );
+		final AffineTransform3D viewerTranslateTransform = new AffineTransform3D();
+		final double[] viewerTranslation = new double[ viewerTranslateTransform.numDimensions() ];
+		for ( int d = 0; d < viewerTranslateTransform.numDimensions(); ++d )
+			viewerTranslation[ d ] = -imageSize[ d ] / 2. * normalizedVoxelDimensions[ d ];
+		viewerTranslateTransform.setTranslation( viewerTranslation );
+
+		// additional translation due to viewer frame size
+		final AffineTransform3D viewerFrameTranslateTransform = new AffineTransform3D();
+		viewerFrameTranslateTransform.setTranslation( new double[] { viewerFrameSize[ 0 ] / 2., viewerFrameSize[ 1 ] / 2., 0 } );
+
+		// scaling
+		final double scalingFactor = Math.min( ( double ) viewerFrameSize[ 0 ] / imageSize[ 0 ], ( double ) viewerFrameSize[ 1 ] / imageSize[ 1 ] );
+		final AffineTransform3D viewerScaleTransform = new AffineTransform3D();
+		for ( int d = 0; d < viewerScaleTransform.numDimensions(); ++d )
+			viewerScaleTransform.set( scalingFactor, d, d );
+
+		// apply the transform
+		bdv.getViewer().setCurrentViewerTransform(  viewerTranslateTransform.preConcatenate( viewerScaleTransform.preConcatenate( viewerFrameTranslateTransform ) ) );
+
 		bdv.getViewer().setDisplayMode( DisplayMode.FUSED );
 
 		return bdv;

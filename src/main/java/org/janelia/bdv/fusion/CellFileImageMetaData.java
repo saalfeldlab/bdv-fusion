@@ -142,7 +142,7 @@ public class CellFileImageMetaData
 	}
 
 	// taken from stitching-spark Utils
-	private static double[] normalizeVoxelDimensions( final VoxelDimensions voxelDimensions )
+	public static double[] normalizeVoxelDimensions( final VoxelDimensions voxelDimensions )
 	{
 		final double[] normalizedVoxelDimensions = new double[ voxelDimensions.numDimensions() ];
 		double voxelDimensionsMinValue = Double.MAX_VALUE;
