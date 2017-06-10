@@ -44,6 +44,10 @@
 		    <artifactId>junit</artifactId>
 		    <scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.scijava</groupId>
+			<artifactId>ui-behaviour</artifactId>
+		</dependency>
 	</dependencies>
 
 	<repositories>

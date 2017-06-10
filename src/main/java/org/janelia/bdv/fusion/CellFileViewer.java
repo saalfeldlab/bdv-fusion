@@ -2,13 +2,21 @@ package org.janelia.bdv.fusion;
 
 import static bdv.bigcat.CombinedImgLoader.SetupIdAndLoader.setupIdAndLoader;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.scijava.ui.behaviour.io.InputTriggerConfig;
+import org.scijava.ui.behaviour.io.InputTriggerDescription;
+import org.scijava.ui.behaviour.io.yaml.YamlConfigIO;
+import org.scijava.ui.behaviour.util.TriggerBehaviourBindings;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonIOException;
@@ -23,6 +31,7 @@ import bdv.viewer.DisplayMode;
 import bdv.viewer.SourceAndConverter;
 import bdv.viewer.ViewerOptions;
 import fiji.util.gui.GenericDialogPlus;
+import ij.ImageJ;
 import ij.plugin.PlugIn;
 import mpicbg.spim.data.generic.sequence.BasicViewSetup;
 import mpicbg.spim.data.registration.ViewRegistration;
@@ -50,6 +59,8 @@ public class CellFileViewer implements PlugIn
 
 	final public static void main( final String... args )
 	{
+		new ImageJ();
+		
 		exec( args[ 0 ] );
 	}
 
@@ -84,6 +95,19 @@ public class CellFileViewer implements PlugIn
 
 		final BigDataViewer bdv = createViewer( Paths.get( jsonPath ).getFileName() + " - Cell File Viewer", metaDatas );
 		bdv.getViewerFrame().setVisible( true );
+		
+		final TriggerBehaviourBindings bindings = bdv.getViewerFrame().getTriggerbindings();
+		final InputTriggerConfig config = getInputTriggerConfig();
+
+		final CropController cropController = new CropController(
+					bdv.getViewer(),
+					metaDatas,
+					config,
+					bdv.getViewerFrame().getKeybindings(),
+					config );
+		
+		bindings.addBehaviourMap( "crop", cropController.getBehaviourMap() );
+		bindings.addInputTriggerMap( "crop", cropController.getInputTriggerMap() );
 	}
 
 	private static BigDataViewer createViewer(
@@ -213,4 +237,37 @@ public class CellFileViewer implements PlugIn
 
 		return bdv;
 	}
+	
+	static protected InputTriggerConfig getInputTriggerConfig() throws IllegalArgumentException
+	{
+		final String[] filenames = { "bigcatkeyconfig.yaml", System.getProperty( "user.home" ) + "/.bdv/bigcatkeyconfig.yaml" };
+
+		for ( final String filename : filenames )
+		{
+			try
+			{
+				if ( new File( filename ).isFile() )
+				{
+					System.out.println( "reading key config from file " + filename );
+					return new InputTriggerConfig( YamlConfigIO.read( filename ) );
+				}
+			}
+			catch ( final IOException e )
+			{
+				System.err.println( "Error reading " + filename );
+			}
+		}
+
+		System.out.println( "creating default input trigger config" );
+
+		// default input trigger config, disables "control button1" drag in bdv
+		// (collides with default of "move annotation")
+		final InputTriggerConfig config =
+				new InputTriggerConfig(
+						Arrays.asList(
+								new InputTriggerDescription[] { new InputTriggerDescription( new String[] { "not mapped" }, "drag rotate slow", "bdv" ) } ) );
+
+		return config;
+	}
+
 }
