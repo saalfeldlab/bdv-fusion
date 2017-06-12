@@ -17,7 +17,6 @@
 package org.janelia.bdv.fusion;
 
 import java.util.Arrays;
-import java.util.List;
 
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -32,17 +31,17 @@ import org.scijava.ui.behaviour.io.InputTriggerConfig;
 import org.scijava.ui.behaviour.util.AbstractNamedAction;
 import org.scijava.ui.behaviour.util.InputActionBindings;
 
-import bdv.ViewerSetupImgLoader;
-import bdv.tools.brightness.ConverterSetup;
 import bdv.viewer.ViewerPanel;
-import fiji.util.gui.GenericDialogPlus;
 import ij.IJ;
 import ij.gui.GenericDialog;
+import net.imglib2.RandomAccessible;
+import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.Volatile;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
@@ -53,10 +52,10 @@ import net.imglib2.view.Views;
 public class CropController
 {
 	final protected ViewerPanel viewer;
-	
+
 	private RealPoint lastClick = new RealPoint(3);
 	private CellFileImageMetaData[] cellFileImageMetaDatas;
-	
+
 	static private int width = 1024;
 	static private int height = 1024;
 	static private int depth = 512;
@@ -157,48 +156,55 @@ public class CropController
 			gd.addNumericField( "height : ", height, 0, 5, "px" );
 			gd.addNumericField( "depth : ", depth, 0, 5, "px" );
 			gd.addNumericField( "scale_level : ", scaleLevel, 0 );
-			
+
 			gd.showDialog();
-			
+
 			if ( gd.wasCanceled() )
 				return;
-			
+
 			width = ( int )gd.getNextNumber();
 			height = ( int )gd.getNextNumber();
 			depth = ( int )gd.getNextNumber();
 			scaleLevel = ( int )gd.getNextNumber();
-			
+
+			doCrop();
+		}
+
+		private < T extends NativeType< T > & RealType< T >, V extends Volatile< T > > void doCrop()
+		{
 			final int w = width;
 			final int h = height;
 			final int d = depth;
 			final int s = scaleLevel;
-			
+
 			int channel = 0;
 			for ( final CellFileImageMetaData metaData : cellFileImageMetaDatas )
 			{
-				AbstractCellFileImageLoader<? extends NativeType<?>, ? extends Volatile<?>> imgLoader = CellFileImageLoaderFactory.createImageLoader( metaData );
-				AffineTransform3D transform = imgLoader.getMipmapTransforms()[ s ].copy();
+				final AbstractCellFileImageLoader< T, V > imgLoader = ( AbstractCellFileImageLoader< T, V > ) CellFileImageLoaderFactory.createImageLoader( metaData );
+				final AffineTransform3D transform = imgLoader.getMipmapTransforms()[ s ].copy();
 				transform.preConcatenate( metaData.getTransform() );
 				final RealPoint center = new RealPoint( 3 );
 				transform.applyInverse( center, lastClick );
-				
+
 				final long[] min = new long[] {
 						Math.round( center.getDoublePosition( 0 ) - 0.5 * w ),
 						Math.round( center.getDoublePosition( 1 ) - 0.5 * h ),
 						Math.round( center.getDoublePosition( 2 ) - 0.5 * d ) };
 				final long[] size = new long[] { w, h, d };
-				
-				IJ.log( "cropping " + Arrays.toString( size ) + "pixels at " + Arrays.toString( min ) );
-				
-				IntervalView crop = Views.offsetInterval( imgLoader.getImage( 0, s ), min, size );
-				
+
+				IJ.log( String.format( "Cropping %s pixels at %s using scale level %d", Arrays.toString( size ), Arrays.toString( min ), s ) );
+
+				final RandomAccessibleInterval< T > img = imgLoader.getImage( 0, s );
+				final RandomAccessible< T > imgExtended = Views.extendZero( img );
+				final IntervalView< T > crop = Views.offsetInterval( imgExtended, min, size );
+
 				ImageJFunctions.show( crop, "channel " + channel + " " + Arrays.toString( min ) );
-				
+
 				System.out.println( metaData.getUrlFormat() + " " + Util.printCoordinates( center ) );
-				
+
 				++channel;
 			}
-			
+
 			System.out.println( Util.printCoordinates( lastClick ) );
 			viewer.requestRepaint();
 		}
