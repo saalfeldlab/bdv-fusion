@@ -181,6 +181,12 @@ public class CropController
 			for ( final CellFileImageMetaData metaData : cellFileImageMetaDatas )
 			{
 				final AbstractCellFileImageLoader< T, V > imgLoader = ( AbstractCellFileImageLoader< T, V > ) CellFileImageLoaderFactory.createImageLoader( metaData );
+				if ( s < 0 || s >= imgLoader.numMipmapLevels() )
+				{
+					IJ.log( String.format( "Specified incorrect scale level %d. Valid range is [%d, %d]", s, 0, imgLoader.numMipmapLevels() - 1 ) );
+					scaleLevel = imgLoader.numMipmapLevels() - 1;
+					return;
+				}
 				final AffineTransform3D transform = imgLoader.getMipmapTransforms()[ s ].copy();
 				transform.preConcatenate( metaData.getTransform() );
 				final RealPoint center = new RealPoint( 3 );
