@@ -84,7 +84,7 @@ public class CropController
 		inputAdder = config.inputTriggerAdder( inputTriggerMap, "crop" );
 		ksKeyStrokeAdder = keyProperties.keyStrokeAdder( ksInputMap, "crop" );
 
-		new Crop( "crop", "SPACE button1" ).register();
+		new Crop( "crop", "SPACE" ).register();
 
 		inputActionBindings.addActionMap( "select", ksActionMap );
 		inputActionBindings.addInputMap( "select", ksInputMap );
