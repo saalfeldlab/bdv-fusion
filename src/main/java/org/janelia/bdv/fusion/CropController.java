@@ -33,6 +33,7 @@ import org.scijava.ui.behaviour.util.InputActionBindings;
 
 import bdv.viewer.ViewerPanel;
 import ij.IJ;
+import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import net.imglib2.RandomAccessible;
 import net.imglib2.RandomAccessibleInterval;
@@ -41,6 +42,7 @@ import net.imglib2.Volatile;
 import net.imglib2.img.display.imagej.ImageJFunctions;
 import net.imglib2.realtransform.AffineTransform3D;
 import net.imglib2.type.NativeType;
+import net.imglib2.type.numeric.NumericType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 import net.imglib2.view.IntervalView;
@@ -204,7 +206,7 @@ public class CropController
 				final RandomAccessible< T > imgExtended = Views.extendZero( img );
 				final IntervalView< T > crop = Views.offsetInterval( imgExtended, min, size );
 
-				ImageJFunctions.show( crop, "channel " + channel + " " + Arrays.toString( min ) );
+				show( crop, "channel " + channel + " " + Arrays.toString( min ) );
 
 				System.out.println( metaData.getUrlFormat() + " " + Util.printCoordinates( center ) );
 
@@ -213,6 +215,26 @@ public class CropController
 
 			System.out.println( Util.printCoordinates( lastClick ) );
 			viewer.requestRepaint();
+		}
+
+		// Taken from ImageJFunctions. Modified to swap slices/channels for 3D image (by default they mistakenly are nSlices=1 and nChannels=depth)
+		// TODO: pull request with this fix if appropriate in general case?
+		private < T extends NumericType< T > > ImagePlus show( final RandomAccessibleInterval< T > img, final String title )
+		{
+			final ImagePlus imp = ImageJFunctions.wrap( img, title );
+			if ( null == imp ) { return null; }
+
+			// Make sure that nSlices>1 and nChannels=nFrames=1 for 3D image
+			final int[] possible3rdDim = new int[] { imp.getNChannels(), imp.getNSlices(), imp.getNFrames() };
+			Arrays.sort( possible3rdDim );
+			if ( possible3rdDim[ 0 ] * possible3rdDim[ 1 ] == 1 )
+				imp.setDimensions( 1, possible3rdDim[ 2 ], 1 );
+
+			imp.show();
+			imp.getProcessor().resetMinAndMax();
+			imp.updateAndRepaintWindow();
+
+			return imp;
 		}
 	}
 }
