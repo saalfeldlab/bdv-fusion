@@ -16,7 +16,9 @@
  */
 package org.janelia.bdv.fusion;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -62,6 +64,7 @@ public class CropController
 	static private int height = 1024;
 	static private int depth = 512;
 	static private int scaleLevel = 0;
+	static private boolean single4DStack = false;
 
 	// for behavioUrs
 	private final BehaviourMap behaviourMap = new BehaviourMap();
@@ -158,6 +161,7 @@ public class CropController
 			gd.addNumericField( "height : ", height, 0, 5, "px" );
 			gd.addNumericField( "depth : ", depth, 0, 5, "px" );
 			gd.addNumericField( "scale_level : ", scaleLevel, 0 );
+			gd.addCheckbox( "Single_4D_stack", single4DStack );
 
 			gd.showDialog();
 
@@ -168,6 +172,7 @@ public class CropController
 			height = ( int )gd.getNextNumber();
 			depth = ( int )gd.getNextNumber();
 			scaleLevel = ( int )gd.getNextNumber();
+			single4DStack = gd.getNextBoolean();
 
 			doCrop();
 		}
@@ -178,6 +183,9 @@ public class CropController
 			final int h = height;
 			final int d = depth;
 			final int s = scaleLevel;
+
+			final List< RandomAccessibleInterval< T > > channelsImages = new ArrayList<>();
+			long[] min = null;
 
 			int channel = 0;
 			for ( final CellFileImageMetaData metaData : cellFileImageMetaDatas )
@@ -194,7 +202,7 @@ public class CropController
 				final RealPoint center = new RealPoint( 3 );
 				transform.applyInverse( center, lastClick );
 
-				final long[] min = new long[] {
+				min = new long[] {
 						Math.round( center.getDoublePosition( 0 ) - 0.5 * w ),
 						Math.round( center.getDoublePosition( 1 ) - 0.5 * h ),
 						Math.round( center.getDoublePosition( 2 ) - 0.5 * d ) };
@@ -206,11 +214,20 @@ public class CropController
 				final RandomAccessible< T > imgExtended = Views.extendZero( img );
 				final IntervalView< T > crop = Views.offsetInterval( imgExtended, min, size );
 
-				show( crop, "channel " + channel + " " + Arrays.toString( min ) );
+				channelsImages.add( crop );
+
+				if ( !single4DStack )
+					show( crop, "channel " + channel + " " + Arrays.toString( min ) );
 
 				System.out.println( metaData.getUrlFormat() + " " + Util.printCoordinates( center ) );
 
 				++channel;
+			}
+
+			if ( single4DStack )
+			{
+				// FIXME: need to permute slices/channels. Swapping them in the resulting ImagePlus produces wrong output
+				ImageJFunctions.show( Views.permute( Views.stack( channelsImages ), 2, 3 ), Arrays.toString( min ) );
 			}
 
 			System.out.println( Util.printCoordinates( lastClick ) );
